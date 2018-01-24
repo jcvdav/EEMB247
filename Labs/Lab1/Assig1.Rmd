@@ -1,0 +1,110 @@
+---
+title: "Untitled"
+author: "Juan Carlos Villaseñor-Derbez"
+date: "January 23, 2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+> ### Exercise 3: Try it yourself!
+
+> Try making any other modification to the SIR model that you're interested in.  For example, maybe individuals have to go through an exposed class after they become infected, but before they are infectious.  Or, maybe some fraction of the population gets vaccinated and has a reduced susceptibility to the virus. You decide.  Explore your modification to the model using numerical simulations.
+
+The standard SIR model is:
+
+$$
+\begin{align}
+\frac{d S}{dt} &= -\beta I S\\
+\frac{d I}{dt} &= \beta I S  - \gamma I \\
+\frac{d R}{dt} &= \gamma I
+\end{align}
+$$
+
+By including vaccination, the SIR model incorporates vaccination rate $v$ as follows:
+
+$$
+\begin{align}
+\frac{d S}{dt} &= -\beta I S -v S\\
+\frac{d I}{dt} &= \beta I S  - \gamma I \\
+\frac{d R}{dt} &= \gamma I + v S
+\end{align}
+$$
+
+The term $vS$ indicates the proportion $v$ of suceptible individuals $S$ that receive a shot at every timestep.
+
+Effectively, $v$ by-passes individuals from $S$ to $R$ without having to increase $I$. In other words, inndividuals that are vaccinated are not infected and become suceptible. For now, this model assumes that 100% of vaccines applied are effective, but it is easy to modify it so that $v$ is adjusted for an effectivity rate.
+
+```{r}
+suppressPackageStartupMessages({
+  library(deSolve)
+  library(cowplot)
+  library(tidyverse)
+})
+```
+
+
+```{r}
+SIRv.model <- function (t, x, params) {
+  S = x[1]
+  I = x[2]
+  R = x[3]
+  
+  beta = params[1]
+  gamma = params[2]
+  v = params[3]
+  
+  dSdt = (-beta*S*I) - v*S
+  dIdt = (beta*S*I) - (gamma*I)
+  dRdt = (gamma*I) + v*S
+  
+ return(list(c(dSdt,dIdt,dRdt)))
+}
+
+```
+
+## Define initial conditions: 
+
+We can evaluate a model without vaccination by setting $v = 0$. Let's compare both models:
+
+```{r}
+S0 = 99 # Initial number of susceptibles
+I0 = 1 # Initial number of infecteds
+R0 = 0 # Initial number of recovered
+initial_values = c(S=S0,I=I0,R=R0)
+
+beta = 0.1 # per host per week
+gamma = 1 # per week
+v = 0.5 # per week
+
+parameters = c(beta, gamma, 0) # parameters without vaccination
+parameters_v = c(beta,gamma, v) # parameters with vaccination
+
+times = seq(0, 10, by=0.01)
+```
+
+
+```{r, fig.height = 8, fig.width = 5}
+SIR_plot <- lsoda(initial_values, times, SIRv.model, parameters) %>% 
+  as.data.frame() %>% 
+  gather(segment, count, -time) %>% 
+  ggplot(aes(time, count, color = segment)) +
+  geom_line() +
+  theme(legend.position = c(0.7, 0.7))
+
+SIR_v_plot <- lsoda(initial_values, times, SIRv.model, parameters_v) %>% 
+  as.data.frame() %>% 
+  gather(segment, count, -time) %>% 
+  ggplot(aes(time, count, color = segment)) +
+  geom_line() +
+  theme(legend.position = "none")
+
+cowplot::plot_grid(SIR_plot, SIR_v_plot, labels = c("A", "B"), ncol = 1)
+```
+
+
+
+
+
