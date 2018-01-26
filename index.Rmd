@@ -1,0 +1,34 @@
+---
+title: "EEMB 247"
+subtitle: "Class notes"
+author: "Juan Carlos Villaseñor-Derbez"
+output: html_document
+---
+
+# Labs
+
+- [Lab 1](./Labs/Lab1/ComputerLab1.html) - Intro to R and ODEs in R
+- [Lab 2](./Labs/Lab2/) - Intro to linear regression
+
+# Assignments
+
+- [Assignment 1](./Assignments/Assig1/Assig1.pdf) - Intro to linear regression
+    - [code](./Assignments/Assig1/Assig1.Rmd)
+
+# Lectures
+
+- [Lecture 1]() -
+- [Lecture 2]() -
+- [Lecture 3]() -
+- [Lecture 4]() -
+- [Lecture 5]() - 
+- [Lecture 6]() - 
+- [Lecture 7]() - 
+- [Lecture 8]() - 
+- [Lecture 9]() - 
+- [Lecture 10]() - 
+- [Lecture 11]() - 
+- [Lecture 12]() - 
+- [Lecture 13]() - 
+- [Lecture 14]() - 
+- [Lecture 15]() - 
