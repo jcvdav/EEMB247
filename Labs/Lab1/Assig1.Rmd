@@ -1,43 +1,61 @@
 ---
-title: "Untitled"
+title: "Assignment 1"
+subtitle: "Ordinary Differential Equations in R"
 author: "Juan Carlos Villaseñor-Derbez"
 date: "January 23, 2018"
-output: html_document
+output:
+    bookdown::pdf_document2:
+      toc: no
+      fig_caption: true
 ---
 
+# SIR model
+
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(echo = TRUE, fig.height = 5, fig.width = 3.5)
 ```
 
-> ### Exercise 3: Try it yourself!
+The standard SIR model is described by the following system of Ordinary Differential Equations:
 
-> Try making any other modification to the SIR model that you're interested in.  For example, maybe individuals have to go through an exposed class after they become infected, but before they are infectious.  Or, maybe some fraction of the population gets vaccinated and has a reduced susceptibility to the virus. You decide.  Explore your modification to the model using numerical simulations.
-
-The standard SIR model is:
-
-$$
-\begin{align}
+\begin{equation}
+\begin{split} \label{eq:SIR}
 \frac{d S}{dt} &= -\beta I S\\
 \frac{d I}{dt} &= \beta I S  - \gamma I \\
 \frac{d R}{dt} &= \gamma I
-\end{align}
-$$
+\end{split}
+\end{equation}
 
-By including vaccination, the SIR model incorporates vaccination rate $v$ as follows:
+# Instructions given
 
-$$
-\begin{align}
+> Try making any other modification to the SIR model that you're interested in.  For example, maybe individuals have to go through an exposed class after they become infected, but before they are infectious.  Or, maybe some fraction of the population gets vaccinated and has a reduced susceptibility to the virus. You decide.  Explore your modification to the model using numerical simulations.
+
+## Modify SIR into SIR with vaccination (SIRv)
+
+The SIR model (Eq \ref{eq:SIR}) can be modified to incorporate vaccination rate $v$ as follows:
+
+\begin{equation}
+\begin{split} \label{eq:SIRv}
 \frac{d S}{dt} &= -\beta I S -v S\\
 \frac{d I}{dt} &= \beta I S  - \gamma I \\
 \frac{d R}{dt} &= \gamma I + v S
-\end{align}
-$$
+\end{split}
+\end{equation}
 
-The term $vS$ indicates the proportion $v$ of suceptible individuals $S$ that receive a shot at every timestep.
+The term $vS$ in Eq \ref{eq:SIRv} indicates the proportion ($v$) of suceptible individuals ($S$) that receive a shot at each timestep.
 
 Effectively, $v$ by-passes individuals from $S$ to $R$ without having to increase $I$. In other words, inndividuals that are vaccinated are not infected and become suceptible. For now, this model assumes that 100% of vaccines applied are effective, but it is easy to modify it so that $v$ is adjusted for an effectivity rate.
 
+The objective of vaccination is to reduce the density of suceptible individuals. Rearranging $\frac{d S}{dt}$ in Eq \ref{eq:SIRv}, we obtain Eq \ref{eq:S}, where we see that suceptible individuals ($S$) are reduced by a factor of $\left(-\beta I -v\right)$.
+
+\begin{equation}
+\frac{d S}{dt} = S\left(-\beta I -v\right)
+\label{eq:S}
+\end{equation}
+
+## Modelling SIRv
+
 ```{r}
+# Load packages
 suppressPackageStartupMessages({
   library(deSolve)
   library(cowplot)
@@ -45,29 +63,22 @@ suppressPackageStartupMessages({
 })
 ```
 
-
 ```{r}
+# define a SIRv.model function to pass to lsoda
 SIRv.model <- function (t, x, params) {
-  S = x[1]
-  I = x[2]
-  R = x[3]
+  S = x[1]; I = x[2]; R = x[3]
   
-  beta = params[1]
-  gamma = params[2]
-  v = params[3]
+  beta = params[1]; gamma = params[2];  v = params[3]
   
-  dSdt = (-beta*S*I) - v*S
-  dIdt = (beta*S*I) - (gamma*I)
-  dRdt = (gamma*I) + v*S
+  dSdt <- (-beta*S*I) - v*S
+  dIdt <- (beta*S*I) - (gamma*I)
+  dRdt <- (gamma*I) + v*S
   
  return(list(c(dSdt,dIdt,dRdt)))
 }
-
 ```
 
-## Define initial conditions: 
-
-We can evaluate a model without vaccination by setting $v = 0$. Let's compare both models:
+Figure \ref{fig:panel} compares the system with and without vaccination (by setting $v = 0$), using the same initial conditions in a population with 100 individuals, where 1 is infeced and 99 are suceptible.
 
 ```{r}
 S0 = 99 # Initial number of susceptibles
@@ -86,22 +97,23 @@ times = seq(0, 10, by=0.01)
 ```
 
 
-```{r, fig.height = 8, fig.width = 5}
+```{r, fig.cap = "\\label{fig:panel}Number of suceptible (S), Infected (I) and Recovered (R) individuals in a population of 100 individuals under lack of vaccination (A, Eq \\ref{eq:SIR}) and vaccination (B, Eq \\ref{eq:SIRv}).", fig.p = "h"}
 SIR_plot <- lsoda(initial_values, times, SIRv.model, parameters) %>% 
   as.data.frame() %>% 
-  gather(segment, count, -time) %>% 
-  ggplot(aes(time, count, color = segment)) +
-  geom_line() +
-  theme(legend.position = c(0.7, 0.7))
-
+  gather(group, count, -time) %>% 
+  ggplot(aes(time, count, color = group)) +
+  geom_line(size = 1) +
+  theme(legend.position = c(0.7, 0.7)) +
+  scale_color_brewer(palette = "Set1")
 SIR_v_plot <- lsoda(initial_values, times, SIRv.model, parameters_v) %>% 
   as.data.frame() %>% 
-  gather(segment, count, -time) %>% 
-  ggplot(aes(time, count, color = segment)) +
-  geom_line() +
-  theme(legend.position = "none")
+  gather(group, count, -time) %>% 
+  ggplot(aes(time, count, color = group)) +
+  geom_line(size = 1) +
+  theme(legend.position = "none") +
+  scale_color_brewer(palette = "Set1")
 
-cowplot::plot_grid(SIR_plot, SIR_v_plot, labels = c("A", "B"), ncol = 1)
+plot_grid(SIR_plot, SIR_v_plot, labels = c("A", "B"), ncol = 1)
 ```
 
 
