@@ -3,6 +3,9 @@ title: "Assignment 2"
 subtitle: "Solutions to Linear Dynamical Systems in discrete and continuous time"
 author: "Juan Carlos Villaseñor-Derbez"
 date: "January 23, 2018"
+header-includes: #allows you to add in your own Latex packages
+- \usepackage{float} #use the 'float' package
+- \floatplacement{figure}{H} #make every figure with caption = h
 output:
     bookdown::pdf_document2:
       toc: no
@@ -10,7 +13,7 @@ output:
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE, fig.height = 3, fig.width = 6)
+knitr::opts_chunk$set(echo = TRUE, fig.height = 2.5, fig.width = 5, fog.pos = "h")
 ```
 
 ```{r}
@@ -32,15 +35,13 @@ y_{t+1} &= 0.5 x_t + y_t
 \end{split}
 \end{equation}
 
- 
-
 with initial conditions:  
 $x_0 = 0$  
 $y_0 = 1$  
 
 ## Calculate and plot the *numerical solution* to Eq \ref{eq:discrete_system} with $t\in(0, 10)$
 
-```{r}
+```{r, fig.cap = "Numerical solution to Eq \\ref{eq:discrete_system}."}
 X_0 <- 0 # Initial conditions for X
 Y_0 <- 1 # Initial conditons for Y
 nyears <- 10 #Number of years
@@ -62,9 +63,8 @@ data.frame(time, X, Y) %>%
   geom_line(size = 1) +
   geom_point(color = "black") +
   theme_classic() +
-  scale_color_brewer(palette = "Set1") + theme(legend.position = c(0.1, 0.9))
+  scale_color_brewer(palette = "Set1") + theme(legend.position = c(0.1, 0.8))
 ```
-
 
 ## Calculate and plot the *analytical solution* to Eq \ref{eq:discrete_system} with $t\in(0, 10)$
 
@@ -123,67 +123,70 @@ This particular system has a general solution of the form:
 
 Where $C_1$ and $C_2$ represent variables specific to the particular problem, based on the initial conditions. $\lambda_1$ and $\lambda_2$ are the eigenvalues of $A$, and $\bar{v_1}$ and $\bar{v_2}$ are the eigenvectors of $A$.
 
-
 ```{r}
+#Define matrix A
 A <- matrix(c(1, 0.5, 0.5, 1), nrow = 2)
 
+# Calculate and extract eigenvalues
 lambda_1 <- eigen(A)$values[1]
 lambda_2 <- eigen(A)$values[2]
 
+# Calculate and extract eigenvectors
 v_1 <- eigen(A)$vectors[,1]
-
 v_2 <- eigen(A)$vectors[,2]
 ```
 
 The eigenvalues are $\lambda_1 = 1.5$ and $\lambda_2 = 0.5$. The eigenvectors are $\bar{v_1} = \begin{bmatrix}0.7071 \\ 0.7071\end{bmatrix}$, and $\bar{v_2} = \begin{bmatrix}-0.7071 \\0.7071\end{bmatrix}$.
 
-Substituting these values into Eq \ref{eq:solution_discrete}, and simplifying we obtain:
+Substituting these values into Eq \ref{eq:solution_discrete}:
 
 \begin{equation} \label{eq:substituted}
 \begin{split}
-X(t) &= C_1(1.5)^t(1) + C_20.5^t(-1) \\
-Y(t) &= C_1(1.5)^t(1) + C_20.5^t(1)
+X(t) &= C_1(1.5)^t(0.707) + C_20.5^t(-0.707) \\
+Y(t) &= C_1(1.5)^t(0.707) + C_20.5^t(0.707)
 \end{split}
 \end{equation}
 
-Using the known initial conditions ($X(0) = 0$ and $Y(0) = 1$), we can evaluate Eq \ref{eq:substituted} at $t = 0$ and solve for $C_1$ and $C_2$. Solving the equation for state variable $N$:
+Using the known initial conditions ($X(t = 0) = 0$ and $Y(t = 0) = 1$), we can evaluate Eq \ref{eq:substituted} at $t = 0$ and solve for $C_1$ and $C_2$. Solving the equation for state variable $N$:
 
 \begin{equation}
 \begin{split} \label{eq:discrete_X}
-0 &= C_1(1.5)^0(1) + C_20.5^0(-1) \\
-0 &= C_1(1)(1) + C_2(1)(-1) \\
+0 &= C_1(1.5)^0(0.707) + C_20.5^0(-0.707) \\
+0 &= C_1(1)(0.707) + C_2(1)(-0.707) \\
 0 &= C_1 - C_2 \\
 C_1 &= C_2
 \end{split}
 \end{equation}
 
-
 Substituting this in the equation for state variable $Y$:
 
 \begin{equation}
 \begin{split}
-1 &= C_1(1.5)^0(1) + C_20.5^0(1) \\
-1 &= C_1(1)(1) + C_2(1)(1) \\
-1 &= C_1 + C_2 \\
-1 &= C_2 + C_2 \\
-1 & = 2C_2 \\
-C_2 &= \frac{1}{2}
+1 &= C_1(1.5)^0(0.707) + C_20.5^0(0.707) \\
+1 &= C_1(1)(0.707) + C_2(1)(0.707) \\
+1 &= 0.707C_1 + 0.707C_2 \\
+1 &= 0.707C_2 + 0.707C_2 \\
+1 & = 1.414C_2 \\
+C_2 &= \frac{1}{1.414}
 \end{split}
 \end{equation}
 
-
 Returning to Eq \ref{eq:discrete_X}, we obtain that $C_1 = \frac{1}{2}$
 
-```{r}
-C1 <- 0.5
+```{r, fig.cap = "Analytical solution to Eq \\ref{eq:discrete_system}."}
+#Define C1 and C2
+C1 <- 1/(sum(v_1))
 C2 <- C1
 
-t <- seq(0, nyears)
+#Define matrix of years
+t1 <- seq(0, nyears)
+t <- matrix(c(t1, t1), nrow = 2, byrow = T)
 
-XY <- cbind(C1*(lambda_1^t)*1 + C2*(lambda_2^t)*(-1),
-            C1*(lambda_1^t)*1 + C2*(lambda_2^t)*(1))
+# Calculate X and Y
+XY <- C1*(lambda_1^t)*v_1 + C2*(lambda_2^t)*v_2
 
-cbind(t, XY) %>% 
+# Plot X and Y
+cbind(t1, t(XY)) %>% 
   as.data.frame() %>% 
   magrittr::set_colnames(c("time", "X", "Y")) %>% 
   gather(Variable, Value, -time) %>% 
@@ -191,10 +194,8 @@ cbind(t, XY) %>%
   geom_line(size = 1) +
   geom_point(color = "black") +
   theme_classic() +
-  scale_color_brewer(palette = "Set1")
+  scale_color_brewer(palette = "Set1") + theme(legend.position = c(0.1, 0.8))
 ```
-
-\clearpage
 
 # Continuous Time
 
@@ -216,46 +217,183 @@ $y_0 = 1$
 ```{r}
 # Define a function to pass to lsoda
 system <- function(t, values, params){
-  
+  # Extract initial conditions
   x <- values[1]
   y <- values[2]
-  
+  # Extract parameters
   a <- params[1]
   b <- params[2]
   c <- params[3]
   d <- params[4]
-  
+  # Define system
   dxdt <- a*x + b*y
   dydt <- c*x + d*y
-  
+  # Return results
   return(list(c(dxdt, dydt)))
 }
 ```
 
-```{r}
-t <- seq(0, 10)
+\clearpage
+
+```{r, fig.cap = "Numerical solution to Eq \\ref{eq:cont_system}."}
+t <- seq(0, 10) #Vector of times
+# Define initial conditions
 x_0 <- 0
 Y_0 <- 1
 initial_values <- c(X_0, Y_0)
 
+# Define parameters
 a <- 1
 b <- 0.5
 c <- 0.5
 d <- 1
 params <- c(a, b, c, d)
 
+# Call lsoda and plot directly
 lsoda(y = initial_values, times = t, func = system, parms = params) %>% 
   as.data.frame() %>% 
   magrittr::set_colnames(c("time", "X", "Y")) %>% 
   gather(Variable, Value, -time) %>% 
-  ggplot(aes(x = time, y = Value, color = Variable)) +
+  ggplot(aes(x = time, y = log(Value), color = Variable)) +
   geom_line(size = 1) +
-  geom_point(color = "black") +
   theme_classic() +
-  scale_color_brewer(palette = "Set1") + theme(legend.position = c(0.1, 0.9))
+  scale_color_brewer(palette = "Set1") + theme(legend.position = c(0.1, 0.8))
 ```
 
 ## Calculate and plot the *analytical solution* to Eq \ref{eq:cont_system} with $t\in(0, 10)$
+
+Eq \ref{eq:cont_system} can be written in matrix form as:
+
+$$
+\begin{bmatrix}
+    \frac{dx}{dt}\\
+    \frac{dy}{dt}
+\end{bmatrix}
+=
+A
+\times 
+\begin{bmatrix}
+    X(t)\\
+    Y(t)
+\end{bmatrix}
+$$
+
+Where $A$ is the $2\times 2$ matrix:
+
+$$
+A =
+\begin{bmatrix}
+    1 & 0.5\\
+    0.5 & 1
+\end{bmatrix}
+$$
+
+Therefore, the system is:
+
+$$
+\begin{bmatrix}
+    \frac{dx}{dt}\\
+    \frac{dy}{dt}
+\end{bmatrix}
+=
+\begin{bmatrix}
+    1 & 0.5\\
+    0.5 & 1
+\end{bmatrix}
+\times 
+\begin{bmatrix}
+    X(t)\\
+    Y(t)
+\end{bmatrix}
+$$
+
+This particular system has a general solution of the form:
+
+\begin{equation} \label{eq:solution_cont}
+\begin{bmatrix}
+    X(t)\\
+    Y(t)
+\end{bmatrix}
+= C_1e^{\lambda_1t}\bar{v_1} + C_2e^{\lambda_2t}\bar{v_2}
+\end{equation}
+
+Where $C_1$ and $C_2$ represent variables specific to the particular problem, based on the initial conditions. $\lambda_1$ and $\lambda_2$ are the eigenvalues of $A$, and $\bar{v_1}$ and $\bar{v_2}$ are the eigenvectors of $A$.
+
+```{r}
+#Define matrix A
+A <- matrix(c(1, 0.5, 0.5, 1), nrow = 2)
+
+# Calculate and extract eigenvalues
+lambda_1 <- eigen(A)$values[1]
+lambda_2 <- eigen(A)$values[2]
+
+# Calculate and extract eigenvectors
+v_1 <- eigen(A)$vectors[,1]
+v_2 <- eigen(A)$vectors[,2]
+```
+
+The eigenvalues are $\lambda_1 = 1.5$ and $\lambda_2 = 0.5$. The eigenvectors are $\bar{v_1} = \begin{bmatrix}0.7071 \\ 0.7071\end{bmatrix}$, and $\bar{v_2} = \begin{bmatrix}-0.7071 \\0.7071\end{bmatrix}$.
+
+Substituting these values into Eq \ref{eq:solution_cont}, we obtain:
+
+\begin{equation} \label{eq:cont?substituted}
+\begin{split}
+X(t) &= C_1e^{1.5\times 0}(0.707) + C_2e^{0.5\times 0}(-0.707) \\
+Y(t) &= C_1e^{1.5\times 0}(0.707) + C_2e^{0.5\times 0}(0.707)
+\end{split}
+\end{equation}
+
+Using the known initial conditions ($X(t = 0) = 0$ and $Y(t = 0) = 1$), we can evaluate Eq \ref{eq:substituted} at $t = 0$ and solve for $C_1$ and $C_2$. Solving the equation for state variable $N$:
+
+\begin{equation}
+\begin{split} \label{eq:discrete_X}
+0 &= C_1e^{1.5\times 0}(0.707) + C_2e^{0.5\times 0}(-0.707) \\
+0 &= C_1(1)(0.707) + C_2(1)(-0.707) \\
+0 &= 0.707C_1 - 0.707C_2 \\
+0 &= C_1 - C_2 \\
+C_1 &= C_2
+\end{split}
+\end{equation}
+
+Substituting this in the equation for state variable $Y$:
+
+\begin{equation}
+\begin{split}
+1 &= C_1e^{1.5\times 0}(0.707) + C_2e^{0.5\times 0}(0.707) \\
+1 &= C_1(1)(0.707) + C_2(1)(0.707) \\
+1 &= 0.707C_1 + 0.707C_2 \\
+1 &= 0.707C_2 + 0.707C_2 \\
+1 & = 1.414C_2 \\
+C_2 &= \frac{1}{1.414}
+\end{split}
+\end{equation}
+
+Returning to Eq \ref{eq:discrete_X}, we obtain that $C_1 = \frac{1}{1.414}$
+
+```{r, fig.cap = "Analytical solution to Eq \\ref{eq:cont_system}."}
+#Define C1 and C2
+C1 <- 1/(sum(v_1))
+C2 <- C1
+
+#Define matrix of years
+t1 <- seq(0, nyears)
+t <- matrix(c(t1, t1), nrow = 2, byrow = T)
+
+# Calculate X and Y
+XY <- C1*(exp(lambda_1*t))*v_1 + C2*(exp(lambda_2*t))*v_2
+
+# Plot X and Y
+cbind(t1, t(XY)) %>% 
+  as.data.frame() %>% 
+  magrittr::set_colnames(c("time", "X", "Y")) %>% 
+  gather(Variable, Value, -time) %>% 
+  ggplot(aes(x = time, y = log(Value), color = Variable)) +
+  geom_line(size = 1) +
+  theme_classic() +
+  scale_color_brewer(palette = "Set1") + theme(legend.position = c(0.1, 0.8))
+```
+
+
 
 
 
