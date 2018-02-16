@@ -5,10 +5,14 @@ author: "Juan Carlos Villaseñor-Derbez"
 output: html_document
 ---
 
+[Course syllabus](Syllabus_Winter2018.pdf)
+
 # Labs
 
 - [Lab 1](./Labs/Lab1/ComputerLab1.html) - Intro to R and ODEs in R
 - [Lab 2](./Labs/Lab2/Lab2.html) - Intro to linear regression
+- [Lab 3](./Labs/Lab3/ComputerLab3.nb.html) - Calculating Equilibria
+- [Lab 4](./Labs/Lab4/ComputerLab4.nb.html) - Local Stability Analysis and Separation of Time Scales
 
 # Assignments
 
@@ -17,3 +21,17 @@ output: html_document
 
 - [Assignment 2](./Assignments/Assig1/Assig2.pdf) - Solutions to Linear Dynamical Systems in discrete and continuous time
     - [code](./Assignments/Assig1/Assig2.Rmd)
+
+- [Assignment 3](./Assignments/Assig3/Assig3.pdf) - Calculating Equilibria
+    - [code](Assignments/Assig3/Assig3.Rmd)
+    
+- [Assignment 4](./Assignments/Assig4/Assig4.pdf) - Separation of Time Scales
+    - [code](Assignments/Assig4/Assig4.Rmd)
+    
+# Resources
+
+- [How to construct a model](W1-1.pdf)
+- [Introduction to Differential Equations](W2-1.pdf)
+- [Linear ODEs](W2-2.pdf)
+- [Local Stability Analysis](LocalStabilityAnalysis.pdf)
+- [Separation of timescales](Separation_of_timescales.pdf)

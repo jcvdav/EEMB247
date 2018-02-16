@@ -1,0 +1,821 @@
+---
+title: 'EEMB247/BMSE247: Computer lab 4: Local Stability Analysis, Separation of Time Scales, plus R tutorial on the Basics of graphing in R'
+author: "Cherie Briggs"
+date: "February 9, 2018"
+output:
+  html_notebook: default
+  html_document: default
+  pdf_document: default
+---
+
+**Packages you will need for this lesson**
+
+1. `deSolve`
+2. `rootSolve`
+
+If you have already installed them, use these commands to load them:
+```{r, message=FALSE}
+library(deSolve)
+library(rootSolve)
+```
+******
+
+## Local Stability Analysis
+
+The steps that we take when we do Local Stability Analysis to determine whether an equilibrium is locally stable are:  
+
+1. Calculate the equilibrium  
+2. Use Taylor’s theorem to linearize the differential equation near equilibrium.  
+3. Solve the linear differential equations describing the dynamics of a small perturbations from equilibrium.  
+
+Consider a system with $n$ ordinary differential equations: 
+
+$$
+\begin{align}
+    &\frac{dX_1}{dt} = &f_1\left(X_1,X_2,...,X_n\right) \\
+    &\frac{dX_2}{dt} = &f_2\left(X_1,X_2,...,X_n\right) \\
+    &  \hspace{3mm}  \vdots \\
+    &\frac{dX_n}{dt} = &f_n\left(X_1,X_2,...,X_n\right) \
+\end{align}
+$$
+
+******
+
+### 1. Calculate the equilibrium
+We can calculate the equilibrium states,by setting the right hand sides of all of the ODE's equal to zero, and replacing $X_1$ with $X^*_1$, $X_2$ with $X^*_2$, ..., $X_n$ with $X^*_n$, and solving for $X^*_1$, $X^*_2$, ..., $X^*_n$.
+
+******
+
+### 2. Use Taylor’s theorem to linearize the differential equation near equilibrium.
+We then define a small perturbation from equilibrium:
+$$
+\begin{align}
+    &X_1 = X_1^* + x_1\\
+    &X_2 = X_2^* + x_2\\
+    &  \hspace{3mm}  \vdots \\
+    &X_n = X_n^* + x_n
+\end{align}
+$$
+And use Taylor's theorem to write down linear approximations for the rates of change of these small perturbations from equilibrium:
+
+$$
+\begin{align}
+    &\frac{dx_1}{dt} \approx &f_1\left(X_1^*,X_2^*,...,X_n^*\right) + \left.\frac{\partial f_1}{\partial X_1} \right|_{*} x_1 + \left.\frac{\partial f_1}{\partial X_2} \right|_{*} x_2 + \dots + \left.\frac{\partial f_1}{\partial X_n} \right|_{*} x_n \\
+    &\frac{dx_2}{dt} \approx &f_2\left(X_1^*,X_2^*,...,X_n^*\right) + \left.\frac{\partial f_2}{\partial X_1} \right|_{*} x_1 + \left.\frac{\partial f_2}{\partial X_2} \right|_{*} x_2 + \dots + \left.\frac{\partial f_2}{\partial X_n} \right|_{*} x_n \\
+    &  \hspace{3mm}  \vdots \\
+    &\frac{dx_n}{dt} \approx &f_n\left(X_1^*,X_2^*,...,X_n^*\right) + \left.\frac{\partial f_n}{\partial X_1} \right|_{*} x_1 + \left.\frac{\partial f_n}{\partial X_2} \right|_{*} x_2 + \dots + \left.\frac{\partial f_n}{\partial X_n} \right|_{*} x_n \\
+\end{align}
+$$
+The functions $f_1$, $f_2$, ..., $f_n$, evaluated at equilibrium are all equal to zero, so the first terms on the right hand sides of these ODEs are all equal to zero. 
+
+The resulting linear system can be written in matrix notation as:
+
+$$
+\begin{gather}
+ \begin{bmatrix} x_1^{'} \\ x_2^{'} \\ \vdots \\ x_n^{'} \end{bmatrix}
+ =
+  \begin{bmatrix}
+   \left.\frac{\partial f_1}{\partial X_1} \right|_{*} &
+   \left.\frac{\partial f_1}{\partial X_2} \right|_{*} & \dots &
+   \left.\frac{\partial f_1}{\partial X_n} \right|_{*}\\
+   \left.\frac{\partial f_2}{\partial X_1} \right|_{*} &
+   \left.\frac{\partial f_2}{\partial X_2} \right|_{*} & \dots &
+   \left.\frac{\partial f_2}{\partial X_n} \right|_{*}\\
+   \vdots \\
+   \left.\frac{\partial f_n}{\partial X_1} \right|_{*} &
+   \left.\frac{\partial f_n}{\partial X_2} \right|_{*} & \dots &
+   \left.\frac{\partial f_n}{\partial X_n} \right|_{*}\\
+   \end{bmatrix}
+    \begin{bmatrix} x_1 \\ x_2 \\ \vdots \\ x_n \end{bmatrix}
+
+\end{gather}
+$$
+
+that is:
+$$ 
+x' = A x
+$$
+where the matrix A is the **Jacobian matrix**. 
+
+*****
+
+### 3. Solve the linear differential equations describing the dynamics of a small perturbation from equilibrium.  
+
+Usually we don't actually solve the linear ODEs.  Instead we infer whether the perturbation decay to zero (stable equilibrium) or not (unstable equilibrium), by looking at the eigenvalues of the Jacobian matrix.  For continuous-time systems, if the real parts of all of the eigenvalues are less than zero, then the equilibrium is locally stable.  If any of the eigenvalues have positive real parts, then the equilibrium is unstable. 
+
+**************************************************************************
+
+## Using R to determine numerically whether an equilibrium is locally stable
+
+The `rootSolve` package has a function called `jacobian.full` that generates the Jacobian matrix for the right hand side of a set of ordinary differential equations.  We can use this function to calculate the Jacobian matrix at the equilibrium state of the system.  From this we can determine whether or not the equilibrium is locally stable by calculating the eigenvalues of this matrix.  For a continuous-time model, the equilibrium will be locally stable if the real parts of all of the eigenvalues are negative.
+
+The syntax for `jacobian.full` is:  
+`jacobian.full(y, func, parms, ...)`
+where `y` is the state variable values at which the Jacobian is estimated.  
+`func` is a function specifying the ODEs (the same function that you use to describe the model to perform numerical simulations).  
+`parms` is the parameter vector  (optional).   
+`...` any other arguments (optional).
+
+#### Predator-prey example
+Here is the R code for our predator-prey example that we explored in Computer Lab 3.
+$$
+\begin{align}
+    &\text{prey} && \frac{dN}{dt} = I_N - d_NN - aNP \\
+    \\
+    &\text {predators} && \frac{dP}{dt} = caNP - d_PP
+\end{align}
+$$
+(Unfortunately, the format for the function that we use to calculate the gradients of the model for `jacobian.full` is slightly different than the format that we use to calculate the equilibrium in `multiroot`.  We have to write 2 separate functions, although both functions are really doing pretty much the same thing!).
+
+```{r}
+require("rootSolve")
+
+# function used by multiroot to calculate the equilibrium
+PredPrey_eqm <- function(x, parms) {
+  
+  N = x[1]
+  P = x[2]
+  
+  I_N = parms[1]
+  dN = parms[2]
+  a = parms[3]
+  c = parms[4]
+  dP = parms[5]
+  
+      c(F1 = I_N - dN*N - a*N*P,
+        F2 = c*a*N*P - dP*P)
+}
+
+# function returning the gradients for the model (used in Jacobian.full)
+PredPrey <- function(t, state, parameters) {
+  N = state[1]
+  P = state[2]
+  
+  I_N = parameters[1]
+  dN = parameters[2]
+  a = parameters[3]
+  c = parameters[4]
+  dP = parameters[5]
+
+  # rate of change
+  dNdt = I_N - dN*N - a*N*P
+  dPdt = c*a*N*P - dP*P
+  
+  # return the rate of change
+  list(c(dNdt,dPdt))
+}
+
+#specify the values of the parameters
+I_N = 10
+dN = 0.2
+a = 0.01
+c = 0.5
+dP = 0.1
+parameters <- c(I_N,dN,a,c,dP)
+
+#specify the starting guesses for the two state variables
+initN= 10
+initP= 10
+x<-c(N=10,P=10)
+
+#call multiroot
+eqm<-multiroot(PredPrey_eqm, x, parms = parameters)
+
+#the equilibrium values are stored in the root part of eqm
+eqm$root
+
+# Numerically Calculate the Jacobian matrix at the equilibrium. 
+JAC <- jacobian.full(y=c(eqm$root), func = PredPrey, parms = parameters)
+JAC
+```
+
+We can use the R function `eigen` to calculate the eigenvalues of this matrix.  If the real parts of all of the eigenvalues is negative, then the equilibrium is locally stable. 
+```{r}
+eigs<-eigen(JAC)
+eigs
+```
+This gives us the two eigenvalues and their corresponding right eigenvectors of the Jacobian matrix. In this case the eigenvalues are both real and negative, meaning that the equilibrium is locally stable, and that small perturbations from equilibrium should return exponentially equilibrium. 
+
+The `Re()` function returns the real part of a number, so in cases in which the eigenvalues are complex numbers, we can calculate the maximum of the real parts of the eigenvalues using this command:
+```{r}
+max(Re(eigs$values))
+```
+
+This predator-prey example is boring, because the equilibrium is always positive, regardless of the parameter values that we choose.  So, let's look at a model for which the equilibrium can be either positive or negative, depending on our choice of parameters.
+
+*******
+
+####The Brusselator 
+The Brusselator is a theoretical model of an oscillatory chemical reaction network (developed at the Free University of Brussels). The network is:
+
+
+$$
+\begin{align}
+ .\hspace{3mm}  &  \xrightarrow{\hspace{3mm} k_1 \hspace{3mm}}& X\\
+\\
+   X\hspace{3mm} &  \xrightarrow{\hspace{3mm} k_1 \hspace{3mm}}& Y\\
+\\
+   2X + Y \hspace{3mm}& \xrightarrow{\hspace{3mm}  k_3 \hspace{3mm} } & 3X\\
+\\
+   X\hspace{3mm} & \xrightarrow{\hspace{3mm}  k_4 \hspace{3mm} } & .
+\end{align}
+$$
+
+If $x(t)$ is the concentration of $X$ at time $t$, and $y(t)$ is the concentration of $Y$ at time $t$, then the ordinary differential equations describing the dynamics of this system are:
+$$
+\begin{align}
+    & f_1: &\frac{dx}{dt} = & \hspace{3mm}k_1 - k_2 x + k_3 x^2 y - k_4 x \\
+    \\
+    & f_2: &\frac{dy}{dt} =  & \hspace{3mm}k_2 x - k_3 x^2 y
+\end{align}
+$$
+
+We can solve for the equilibrium concentrations of $x$ and $y$ by setting the right hand sides of $f_1$ and $f_2$ equal to zero and solving for $x^*$ and $y^*$. 
+$$
+\begin{aligned}
+    &x^* = \frac{k_1}{k_4}\\
+    \\
+    &y^* = \frac{k_2 k_4}{ k_1 k_3}\\
+\end{aligned}
+$$
+
+Let's let $k_2 = 2$ (in units of $t^{-1}$), $k_3 = 0.5$ (in units of $t^{-1}\text{concentration}^{-1}$), and $k_4 = 1$ (in units of $t^{-1}$).  
+Let's see how our choice for the value of the parameter $k_1$ affects whether or not the equilibrium is locally stable.
+
+```{r}
+# function returning the gradients for the model (used in Jacobian.full)
+Brusselator <- function(t, state, parameters) {
+  x = state[1]
+  y = state[2]
+  
+  k1 = parameters[1]
+  k2 = parameters[2]
+  k3 = parameters[3]
+  k4 = parameters[4]
+
+  # rate of change
+  dxdt = k1 - k2*x + k3*x^2*y - k4*x 
+  dydt = k2*x - k3*x^2*y
+  
+  # return the rate of change
+  list(c(dxdt,dydt))
+}
+
+#specify the values of the parameters
+
+k2 = 2
+k3 = 0.5
+k4 = 1
+
+#Let's try a value for 
+k1 = 2
+
+parameters<-c(k1, k2, k3, k4)
+
+#We can calculate the equilibrium values for this system analytically
+x_eqm <- k1/k4
+y_eqm <- (k2*k4)/(k1*k3)
+
+# Numerically Calculate the Jacobian matrix at the equilibrium. 
+JAC <- jacobian.full(y=c(x_eqm,y_eqm), func = Brusselator, parms = parameters)
+JAC
+```
+```{r}
+eigs<-eigen(JAC)
+eigs
+
+max(Re(eigs$values))
+```
+
+In this case, the eigenvalues are a complex conjugate pair with negative real parts.  What does this mean for the dynamics?  
+It means that a small perturbation from equilibrium will cycle back to the equilibrium. 
+
+What happens if you change the value of $k_1$ to 1?  Try it. 
+The real parts of the eigenvalues are now positive, so a small perturbation from equilibrium will cycle away from equilibrium with diverging oscillations. 
+
+> Exercise 1:
+> Use `lsoda` in the `deSolve` package to see what the dynamics of this system looks like with (a) $k_1 = 2$ and (b) $k_1 = 1$. 
+
+*****
+
+#### Calculating stability boundaries, numerically
+Can we figure out at exactly what value of $k_1$ the system goes from having an unstable equilibrium to a stable equilibrium?  
+
+To go from an unstable equilibrium (with the largest real part of the eigenvalues being positive) to a stable equilibrium (with the largest real part of the eigenvalues negative), we must go through a point where the largest real part of the eigenvalues is equal to zero.  We can search for this point numerically, using one of the root solving functions that we learned about in Computer Lab 3. Remember the `uniroot` function?
+
+```{r}
+# function returning the gradients for the model (used in Jacobian.full)
+
+max_eig_Brusselator <- function(x, k2, k3, k4) {
+  k1<-x
+  x_eqm <- k1/k4
+  y_eqm <- (k2*k4)/(k1*k3)
+  
+  A11 <- k2 - k4
+  A12 <- k3*x_eqm^2
+  A21 <- -k2
+  A22 <- -k3*x_eqm^2
+  A = matrix(c(A11, A12, A21, A22), nrow=2, ncol=2, byrow = TRUE)       
+
+  eigs<-eigen(A)
+  
+ max(Re(eigs$values))
+}
+
+myroot<-uniroot(max_eig_Brusselator, c(1,2), k2= k2, k3=k3, k4=k4)
+
+print("boundary for stability")
+myroot$root
+```
+This reveals that for $k_2 = 2$, $k_3 = 0.5$, and $k_4 = 1$, the boundary between instability and stability occurs at $k_1 = \sqrt{2}$. 
+
+We can make a 2 dimensional plot of the stability boundary by calculating the value of $k_1$ dividing the stable and unstable regions for a range of values of some other parameter.  In this case, I've chosen to plot the stability boundary on the $k_2$ and $k_1$.  
+```{r chunkname, results="hide"}
+# function returning the gradients for the model (used in Jacobian.full)
+
+max_eig_Brusselator <- function(x, k2, k3, k4) {
+  k1<-x
+  x_eqm <- k1/k4
+  y_eqm <- (k2*k4)/(k1*k3)
+  
+  A11 <- k2 - k4
+  A12 <- k3*x_eqm^2
+  A21 <- -k2
+  A22 <- -k3*x_eqm^2
+  A = matrix(c(A11, A12, A21, A22), nrow=2, ncol=2, byrow = TRUE)       
+
+  eigs<-eigen(A)
+ max(Re(eigs$values))
+}
+
+k3 = 0.5
+k4 = 1
+
+k2_values = seq(1, 10, 0.01)
+k1_boundary<-rep(0,length(k2_values))
+i=0
+for(k2 in k2_values) {
+  i = i+1
+  myroot<-uniroot(max_eig_Brusselator, c(0,10), k2= k2, k3=k3, k4=k4)
+  k1_boundary[i]<-myroot$root
+}
+
+```
+
+Plot the stability boundary:
+```{r}
+plot(k1_boundary,k2_values,type="l", xlab="k1",ylab="k2")
+text(3.5,3,"stable")
+text(1.5,6,"unstable")
+```
+
+> Exercise 2:
+> Use `lsoda` in the `deSolve` package to prove to yourself that the equilibrium is in fact stable to the right of the this boundary, and unstable to the left.  (That is, use 'lsoda' to obtain numerical simulations at a range of parameter vaules on each side of the boundary.)
+
+*****
+
+## Homework #4: Separation of Time Scales, Rapid Equilibrium Approximation
+
+Consider the closed system:
+
+
+$$
+\begin{gather}
+
+\begin{matrix}
+\hspace{3mm} \\
+\hspace{3mm} \\
+A \hspace{3mm} \\
+\hspace{3mm} \\
+\end{matrix}
+
+\begin{matrix}
+\xrightarrow{\hspace{3mm} k_1 \hspace{3mm}} \\
+\xleftarrow{\hspace{3mm} k_2 \hspace{3mm}} \\
+\end{matrix}
+
+\begin{matrix}
+\hspace{3mm} \\
+\hspace{3mm} \\
+\hspace{3mm}B \hspace{3mm} \\
+\hspace{3mm} \\
+\end{matrix}
+
+\begin{matrix}
+\xrightarrow{\hspace{3mm} k_3 \hspace{3mm}} \\
+\xleftarrow{\hspace{3mm} k_4 \hspace{3mm}} \\
+\end{matrix}
+
+\begin{matrix}
+\hspace{3mm} \\
+\hspace{3mm} \\
+\hspace{3mm} C  \\
+\hspace{3mm} \\
+\end{matrix}
+
+\end{gather}
+$$
+
+
+with rate constants $k_1 = 0.05$, $k_2 = 0.005$, $k_3 = 0.7$, and $k_4 = 0.4$ (all in units of $\text{minutes}^{-1}$).
+
+
+
+(a) Construct an ordinary differential equation model of this system. 
+
+(b)	Using R, obtain a numerical solution for this set of equations, with initial conditions [A(0)] = 1.5, [B(0)] = 3, [C(0)] = 2 (all in units of mM).
+
+(c) Plot the transient and steady-state behavior of the system.  (You may need to make two plots to capture all of the dynamics.)
+
+(d) It should be clear from your simulation in part (c) that the system dynamics occur on two different time scales (this is also apparent in the widely different rate constants).  Use a rapid equilibrium assumption to reduce your description of the system to two differential equations (with one ODE describing the rate of change of one of the original species, and the other ODE describing the rate of change of a combined species pool), and two algebraic equations (describing the contents of the combined pool).
+
+(e) Using R, obtain a numerical solution of your reduced model in part (d) to compare with the numerical solution in part (b).  Verify that the solution for the reduced system is in good agreement with the original, except for a short initial transient.  (Note that you will have to select initial conditions for the reduced system so that the initial total concentration is in agreement with part (b).)
+
+
+******
+
+
+## R tutorial, Part 4: The basics of plotting in R
+*Portions of this lesson were adopted from a Software Carpentry tutorial by Mark Wilber.*
+
+In the R tutorial in Computer Lab 3, we learned how to use the read.csv command to load data into R: 
+```{r}
+frog <- read.csv("../Lab3/frog_data.csv", header = TRUE)
+```
+
+
+You can plot the whole data frame using the command:
+```{r}
+plot(frog)
+```
+
+R will plot each variable against every other variable, whether or not that makes sense.
+
+There are pros and cons to plotting the entire dataframe.
+
+Though these plots are messy, tiny, and potentially meaningless, they allow you to can very quickly assess your data:
+
++ are there wild outliers that might be typos? No.  
++ are all your variables coded correctly - typos, number vs. factor? Looks like it.
++ are you excited about any of those patterns?
+
+> Tip: In some R GUIs (RStudio, R Console SDI…) the plot window may be small, making multi-faceted figure like this one hard to interpret. Try the following to open whole new windows for your figure:
+
+> *windows(), x11(), or quartz() in windows, unix, or Mac respectively. 
+> *any of these can be closed to return to the GUI and default graphics settings using dev.off().
+
+Scientists tend to make two or three types of plots very frequently: scatter plots, histograms, and boxplots. For the frog data, let's make a scatter plot of worms and fungus.
+
+
+### 1. Scatter Plot
+This time, rather than plotting the whole data frame, we will plot only those variables for which we want to see the relationship.
+
+```{r}
+plot(fungus~worms,data=frog)
+```
+`plot` takes three arguments to make a very basic plot:
+
+* The third, 'data' specifies the data frame from which which you are drawing data.
+* The first two are the two variables you want to examine. If they are related by `~`, it means something like "fungus with respect to worms".  This will put fungus on the y axis and worms on the x-axis. 
+* The alternative syntax for this is: `plot(worms,fungus,data=frog)`. If the first two variables are separated by a comma, R will plot the first variable (worms) on the x-axis and the second variable (fungus) on the y-axis.  
+ 
+#### Adding a little style to plots
+This figure looks OK, certainly useful for exploratory analyses and proofing your data. But lets add a couple arguments to the `plot()` function to enhance the figure. Here's a few we like to use when making basic figures for presentation:
+
+`xlab` and `ylab` allow you to specify character strings to change your axis labels; for example, to add your measurement units.  
+`pch` lets you set the shape of data points (google "pch r" to see the options)  
+`cex` scales text and symbols relative to default.  
+`col` sets colors, using words is easiest  
+specifying `.axis` or `.lab` after these allows you to control the size or color of the axis and labels  
+`xlim` or `ylim` allow you to specify the ranges of your axes  
+`type = "l"` (lines) will connect the points in order with lines, without point markers  
+`type = "b"` (both) will connect the points in order with lines, and include point markers.  
+
+
+```{r}
+plot(fungus~worms, data=frog,
+     ylab="fungus (zoospores)", xlab="worms (number per frog)",
+     cex=2, cex.axis=1.5, cex.lab=1.5, 
+     pch=21, 
+     col="black", bg="grey",
+     xlim=c(0,20), ylim=c(0,100))
+```
+There is a very long list of graphical parameters you can set. Use `?par` to see most of them. Here, we have moved some of the parameters you set in `plot()` to a new function `par()` that precedes the plot.
+
+
+*****
+
+### 2. Histograms 
+You can make histograms using the `hist` command:
+
+```{r}
+hist(frog$weight)
+```
+A few notes about `hist()`:
+
+* For whatever reason, `hist()` does not take a data argument like `plot()` does. You must specify the vector as a part of the data frame using the $: `frog$weight`  
+* You can alter many characteristics of the plot, using arguments such as `xlab`, `ylab`, `col`, `main`.
+* R automatically sets the breaks; you may adjust them using the breaks= argument, which accepts a vector, e.g.:
+```{r}
+hist(frog$weight, breaks=c(0,5,10,15,20))
+```
+
+or 
+```{r}
+hist(frog$weight, breaks=seq(0,20,1), col="blue", xlab = "weight (g)", main="")
+```
+### 3. Boxplots
+You can make boxplots using the `boxplot` command:
+
+```{r}
+boxplot(weight~color, data =frog, 
+  	xlab="frog color", ylab="frog weight (g)")
+```
+
+You have to be careful in intepretting boxplots. In R the default is: 
+"The bottom and top of the box are always the 25th and 75th percentile (the lower and upper quartiles, respectively), and the band near the middle of the box is always the 50th percentile (the median). But the ends of the whiskers can represent several possible alternative values."  
+
+In R’s default boxplot{graphics} code,
+
+upper whisker = min(max(x), Q_3 + 1.5 * IQR)  
+lower whisker = max(min(x), Q_1 – 1.5 * IQR)  
+
+where IQR = Q_3 – Q_1, the box length.  
+
+So the upper whisker is located at the *smaller* of the maximum x value and Q_3 + 1.5 IQR,  
+whereas the lower whisker is located at the *larger* of the smallest x value and Q_1 – 1.5 IQR.
+
+
+
+********
+
+### 4. Saving/Exporting Figures
+If you are going to use a figure in a presentation or paper, you could copy and paste it, but saving/exporting it is programmable and reproducible, and allows you to control size, resolution, and file type.
+
+To write a figure to a file, you:
+
+1. open a plotting 'device' and specify the file path
+2. run the plot function
+3. close the device
+
+Like this:
+```{r}
+jpeg("Figure_1.jpg")         # you can add a path to this
+plot(fungus~worms, data=frog,
+     ylab="fungus (zoospores)", xlab="worms (number per frog)",
+     cex=2, cex.axis=1.5, cex.lab=1.5, 
+     pch=21, 
+     col="black", bg="grey",
+     xlim=c(0,20), ylim=c(0,100))
+dev.off()
+```
+You won't see the plot produced by this code, until you open the file you just created.
+
+*****
+
+## ggplot
+To run this portion of the tutorial, you need to have installed and loaded the package `ggplot2`.
+```{r}
+library("ggplot2")
+```
+
+Other packages that will enhance ggplots are:
+`ggthemes`, `gridExtra`, `devtools`, `colorbrewer` and many, many others.
+
+*Portions of this lesson were adopted from a Software Carpentry tutorial by Mark Wilber.*
+
+### What is ggplot?
+ggplot is an alternative to the "base" R graphics.   
+* The "gg" stands for grammar of graphics
+* A syntax for making plots and figures.
+* Defines components of a figure.
+* Coherent, consistent syntax for a range of plotting.
+
+Compare to "base" graphics:
+
+`plot(fungus~worms, data=frog)`
+
+vs.
+
+`ggplot(data=frog, aes(x=worms, y=fungus)) + geom_point()`
+
+###Parts of a ggplot plot:
+There are several essential parts of any plot, and in `ggplot2`, they are:
+
+1. the function: `ggplot()`
+2. the arguments:
++ data
++ aes
++ geom
++ stats
++ facets
++ scales
++ theme
++ ...and others
+
+We won't cover these in much depth, but if you are comfortable with what we show you today, exploring the vast functionality of geom, stats, scales, and theme should be a pleasure.
+
+#### `ggplot()`
+Some people like to assign (<-) their plot function to a variable, like this:
+
+`myplot<-ggplot(...)`
+
+
+#### `data`
++ This is the data you want to plot
++ Must be a data.frame
+
+For this lesson, we are going to look at the `frog` data set.
+
+Let's build a scatter plot of worms and fungus
+
+`myplot<-ggplot(data=frog... )`
+
+
+#### `aes`
+For **aesthetics**.
+
+How your data are to be visually represented. One of your variables will be your independent (x) variable, another will be your dependent (y) variable.
+
++ some people call this mapping
++ which data on the x
++ which data on the y
++ also: color, size, shape, transparency
+
+Here is how to do it
+
+myplot<-ggplot(data=iris, aes(x=Sepal.Length, y=Sepal.Width))
+summary(myplot)  
+```{r}
+myplot<-ggplot(data=frog, aes(x=worms, y=fungus))
+```
+
+So far, we have told ggplot where to look for data, and how to represent that data, but not what to do with it.
+
+#### `geom`
+For geometry.
+
+This is how we create the layer we actually see as our figure.
+These are the geometric objects likes points, lines, polygons, etc. that are in the plot
+
++ geom_point()
++ geom_line()
++ geom_boxplot()
++ geom_text()
++ geom_bar()
++ geom_hline()
++ 25 more!
+
+Let's add a geom to make a scatter plot:
+
+```{r}
+myplot<-ggplot(data=frog, aes(x=worms, y=fungus))+geom_point()
+myplot
+```
+
+#### Changing the aesthetics of a `geom`:
+Lets increase the size of the data points…
+```{r}
+ggplot(data=frog, aes(x=worms, y=fungus))+geom_point(size=3)
+```
+
+...or add some **useful** color:
+```{r}
+ggplot(data=frog, aes(x=worms, y=fungus, color = sex))+geom_point(size=3)
+```
+
+Using color to differentiate data points with respect to sex allows us to see if there is a difference between the sexes in the relationship between worms and fungus.
+
+If you need to use black and white, you can differentiate points by shape:
+```{r}
+ggplot(data=frog, aes(x=worms, y=fungus, shape=sex))+geom_point(size=3)
+```
+
+or, exactly the same result:
+```{r}
+ggplot(data=frog, aes(x=worms, y=fungus))+geom_point(aes(shape=sex), size=3)
+```
+
+If you don't like those shapes, set some other shapes:
+```{r}
+ggplot(data=frog, aes(x=worms, y=fungus))+
+  geom_point(aes(shape=sex), size=3)+
+  scale_shape_manual(values=c(1,16))
+```
+
+Here we used a `geom_scale` to map specific point shapes onto their species values. If `aes()` maps shape or color to a grouping variable, then you can use a scale geom to set the values for your shape or color.
+
+###3 geoms for summarization:
+**Boxplot:**
+```{r}
+ggplot(data=frog, aes(x=color, y=fungus))+
+  geom_boxplot()
+```
+
+Histogram - here you need only specify one vector to be visualized in your aes():
+```{r}
+ggplot(data=frog, aes(x=worms))+
+  geom_histogram(binwidth=2, color="black", fill="white")
+```
+
+
+#### facets
+Facets are panels in which plots of mapped variables are arranged according to a categorical grouping variable(s).
+
+In the iris dataset, we can use sex as the grouping variable:
+```{r}
+ggplot(data=frog, aes(x=worms, y=fungus))+
+geom_point(size=3)+  
+facet_grid(.~sex)
+```
+
+Specifying the group variable on the left `facet_grid(sex~.)` arranges facets in one column, on the `right facet_grid(.~sex)` in one row. You can also facet by two (or more) grouping variables. For example:
+```{r}
+ggplot(data=frog, aes(x=worms, y=fungus))+
+geom_point(size=3)+  
+facet_grid(sex~color)
+```
+
+#### `stats`
+For **statsistics**.
+
+The `geom_boxplot()` and `geom_histogram()` are stats components, and there are a bunch. We don't have a lot of time to cover these, but they are extremely valuable, especially if you are using ggplot2 for reporting results, rather than just exploratory plotting.
+
+Here is another: you can add a linear fit line to a scatter plot:
+
+```{r}
+ggplot(data=frog, aes(x=worms, y=fungus))+
+geom_point(size=3)+  
+geom_smooth(method=lm) 
+```
+
+#### `theme` and controlling figure appearance
+Themes allow you to specify how the non-data components of your figure look, e.g. legends, axis labels, and backgrounds.
+
+First though, there are ways to control the appearance of your data points by setting a value to them, or mapping them to a grouping variable. You can do this in the `aes()` or in the `geom`, but any character of the plot you set in `aes()` becomes a global setting for your figure. For example, if you set `aes(..., color=pink)`, then all the data in your figure will be pink, no matter what (or how many) geoms you map to the variables.
+
+You can control the non-data elements (text, axes, legends) using themes. Using our color-coded scatterplot of Sepal Width vs Sepal Length, lets add a theme to make our figure worthy of our next committee meeting.
+
+Rerun the code to see how the plot looked by default:
+
+```{r}
+ggplot(data=frog, aes(x=worms, y=fungus))+
+geom_point() 
+```
+
+```{r}
+ggplot(data=frog, aes(x=worms, y=fungus, color = virus))+
+geom_point(size=3)+
+theme(legend.key=element_rect(fill=NA),
+    legend.position="bottom",
+    axis.title=element_text(angle=0, size=18, face="bold"),
+    legend.text=element_text(angle=0, size=12, face="bold"),
+    panel.background=element_rect(fill=NA))
+
+```
+Obviously, one can really go nuts with her/his themes… and create your own customs:
+```{r}
+# install.packages("wesanderson")
+library(wesanderson)
+```
+
+To see color palettes:
+```{r}
+wes_palette("Royal1")
+```
+
+```{r}
+ggplot(data=frog, aes(x=worms, y=fungus, color = sex))+
+geom_point(size = 7) + 
+scale_color_manual(values = wes_palette("Royal1")) + 
+theme_gray()
+```
+
+
+For those studying predation/medium sized mammals/trophic cascades, try:
+
+```{r}
+wes_palette("FantasticFox")
+```
+
+...and for the marine biologists:
+
+```{r}
+wes_palette("Zissou")
+```
+
+
+#### Saving a ggplot figure:
+
+You can use the same approach we showed in the basic plotting lesson, or try this:
+```{r}
+ggsave("myplot.jpg", width=8, height=8, unit="cm", dpi=300)
+```
+In both methods, you can save as most any image format (jpeg, TIFF, PNG, PDF, etc.), as well as specify the size and resolution (dpi) of the image.
+
+
+
+
+
+
+

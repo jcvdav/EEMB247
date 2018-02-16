@@ -1,0 +1,251 @@
+---
+title: "Assignment 4"
+subtitle: "Separation of Time Scales: Rapid Equilibrium Approximation"
+author: "Juan Carlos Villaseñor-Derbez"
+date: "February 8, 2018"
+header-includes: #allows you to add in your own Latex packages
+- \usepackage{float} #use the 'float' package
+- \floatplacement{figure}{H} #make every figure with caption = h
+output:
+    bookdown::pdf_document2:
+      toc: no
+      fig_caption: true
+      number_sections: no
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE,
+                      fig.height = 3,
+                      fig.width = 5,
+                      fog.pos = "h",
+                      fig.split = "center")
+
+suppressPackageStartupMessages({
+  library(deSolve)
+  library(rootSolve)
+  library(tidyverse)
+})
+```
+
+# Defining the system
+
+The system has the following form:
+
+$$
+A \hspace{3mm} \overset{\xrightarrow{k_1}}{\underset{\xleftarrow{k_2}}{}} \hspace{3mm} B \hspace{3mm} \overset{\xrightarrow{k_3}}{\underset{\xleftarrow{k_4}}{}} \hspace{3mm}C
+$$
+
+And the system of ODE's that define it, is given by:
+
+\begin{equation}
+\begin{split}
+  \frac{da}{dt} &= (-k_1 * a) + (k_2 * b) \\
+  \frac{da}{dt} &= (k_1 * a) + (k_4 * c) - (k_2 * b) - (k_3 * b) \\
+  \frac{da}{dt} &= (k_3 * b) - (k_4 * c)
+\end{split} \label{eq:system}
+\end{equation}
+
+With rate constants $k_1=0.05$, $k_2=0.005$, $k_3=0.7$, and $k_4=0.4$.
+
+# Numerical solution
+
+```{r}
+# Define a function
+system <- function(t, values, params){
+  # Extract parameters
+  k1 <- params[1]
+  k2 <- params[2]
+  k3 <- params[3]
+  k4 <- params[4]
+  
+  # Extract state variables
+  a <- values[1]
+  b <- values[2]
+  c <- values[3]
+  
+  # Calculate variables
+  dadt <- (-k1 * a) + (k2 * b)
+  dbdt <- (k1 * a) + (k4 * c) - (k2 * b) - (k3 * b)
+  dcdt <- (k3 * b) - (k4 * c)
+  
+  # Return results
+  return(list(c(dadt, dbdt, dcdt)))
+}
+```
+
+```{r}
+# Define timesteps
+t <- seq(0, 50)
+
+# Define initial conditions
+a <- 1.5
+b <- 3
+c <- 2
+values <- c(a, b, c)
+
+# Define parameters
+k1 <- 0.05
+k2 <- 0.005
+k3 <- 0.7
+k4 <- 0.4
+params <- c(k1, k2, k3, k4)
+
+# Numerical solution
+full <- lsoda(y = values, times = t, func = system, parms = params) %>% 
+  as.data.frame() %>% 
+  magrittr::set_colnames(value = c("time", "A", "B", "C")) %>% 
+  gather(Letter, Value, -time) %>% 
+  mutate(Model = "Full")
+```
+
+# Visualizing the transient and steady-state behavior of the system
+
+```{r, fig.cap = "Transient and steady-state behavior of state variables A, B, and C"}
+ggplot(full, aes(x = time, y = Value, color = Letter)) +
+  geom_line(size = 1) +
+  cowplot::theme_cowplot() +
+  scale_color_brewer(palette = "Set1")
+```
+
+
+# Separation of time-scales by the *rapid equilibrium assumption*
+
+From the Eq \ref{eq:system} we can see that the main processes are between at A-B and B-C. However, they occur at different timescales, governed by the $k_i$ coefficients.
+
+For A-B, the timescale is given by:
+
+$$
+\frac{1}{k_1 + k_2} \\
+= \frac{1}{0.05 + 0.005} \\
+= \frac{1}{0.055}
+$$
+
+And the changes between B-C are given by:
+
+$$
+\frac{1}{k_3 + k_4} \\
+= \frac{1}{0.7 + 0.4} \\
+= \frac{1}{1.1}
+$$
+
+Since the conversions $B \hspace{3mm} \overset{\xrightarrow{}}{\underset{\xleftarrow{}}{}} \hspace{3mm}C$ have a smaller time constant than the conversion $A \hspace{3mm} \overset{\xrightarrow{}}{\underset{\xleftarrow{}}{}} \hspace{3mm} B \hspace{3mm}$ (*i.e.* $\frac{1}{k_1 + k_2}<<\frac{1}{k_3 + k_4}$), indicating that $B$ and $C$ reach an equilibrium faster than $A$. We can pool $B$ and $C$ together, and focus on how their pooled concentrations and $A$ interact. From Eq \ref{eq:system}, we have that
+
+$$\frac{\tilde{c}(t)}{\tilde{b}(t)} = \frac{k_3}{k_4}$$
+
+which in turn is
+
+\begin{equation}
+\label{eq:pool_cb}
+\tilde{c}(t)= \tilde{b}(t) \frac{k_3}{k_4}
+\end{equation}
+
+This allows us to reduce the system to a pooled B and C group that converts to and from A. Let $\tilde{d}(t)$ be the total concentration in the pool $B+C$ (*i.e.* $\tilde{d}(t) = \tilde{b}(t) + \tilde{c}(t)$). The fractions of $B$ and $C$ are fixed by the equilibrium ratio. Thus, combining this with Eq \ref{eq:pool_cb}, we obtain:
+
+$$
+\begin{split}
+\tilde{d}(t) &= \tilde{b}(t) + \tilde{c}(t)\\
+ &= \tilde{b}(t) + \tilde{b}(t) \frac{k_3}{k_4} \\
+ &= \tilde{b}(t)\frac{k_4+k_3}{k_4}
+\end{split}
+$$
+
+And solving for $\tilde{b}(t)$ gives:
+
+\begin{equation}
+\label{eq:tilde_b}
+\tilde{b}(t) = \tilde{d}(t)\frac{k_4}{k_4+k_3}
+\end{equation}
+
+And
+
+\begin{equation}
+\label{eq:tilde_c}
+\tilde{c}(t) = \tilde{d}(t) - \tilde{b}(t) = \tilde{d}(t)\frac{k_3}{k_4+k_3}
+\end{equation}
+
+\clearpage
+
+The pool $D$ converts to and from $A$ at rate $k_1\tilde{a}(t)-k_2\tilde{b}(t)$:
+
+\begin{equation}
+\begin{split}
+\frac{d}{dt}\tilde{d}(t) &= k_1\tilde{a}(t)-k_2\tilde{b}(t) \\
+&= k_1\tilde{a}(t)-k_2\left(\frac{k_4}{k_4+k_3}\tilde{d}(t)\right) \\
+&= k_1\tilde{a}(t)-\frac{k_2k_4}{k_4+k_3}\tilde{d}(t)
+\label{eq:tilde_d}
+\end{split}
+\end{equation}
+
+We can use Eq \ref{eq:tilde_d} along with $\frac{d}{dt}\tilde{a}(t) = (-k_1+k_2)\tilde{d}(t)$ to calculate the long-term equilibrium of $A$ and $D$, and then use the algebraic expressions \ref{eq:tilde_b} and \ref{eq:tilde_c} to calculate $B$ and $C$ at each time step.
+
+# Numerical solution of reduced model
+
+```{r}
+# Define a function for the reduced system
+reduced_system <- function(t, values, params){
+  # Extract parameters
+  k1 <- params[1]
+  k2 <- params[2]
+  k3 <- params[3]
+  k4 <- params[4]
+  
+  # Extract state variables
+  a <- values[1]
+  d <- values[2]
+  
+  # Calculate rates
+  dadt <- (-k1 * a) + (k2 * d)
+  dddt <- (k1 * a) - (k2*((k4)/(k4+k3))*d)
+  
+  return(list(c(dadt, dddt)))
+}
+```
+
+```{r}
+# Define new initial conditions
+d <- b + c
+values <- c(a, d)
+
+# Numerical solution
+reduced <- lsoda(y = values, times = t, func = reduced_system, parms = params) %>% 
+  as.data.frame() %>% 
+  magrittr::set_colnames(value = c("time", "A", "D")) %>% 
+  mutate(B = D*(k4/(k4+k3)),
+         C = D*(k3/(k4+k3))) %>% 
+  gather(Letter, Value, -time) %>% 
+  mutate(Model = "Reduced")
+```
+
+\clearpage
+
+```{r, fig.cap = "Comparision of transient and steady-state behavior of state variables A, B, and C between the full model and the reduced model."}
+rbind(full, reduced) %>% 
+  ggplot(aes(x = time, y = Value, color = Letter, linetype = Model)) +
+  geom_line(size = 1) +
+  cowplot::theme_cowplot() +
+  scale_color_brewer(palette = "Set1")
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

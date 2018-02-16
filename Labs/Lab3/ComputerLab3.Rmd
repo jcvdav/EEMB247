@@ -1,0 +1,790 @@
+---
+title: 'EEMB247/BMSE247: Computer lab 3: Calculating Equilibria, plus R tutorial on Inputting and Manipulating Data'
+author: "Cherie Briggs"
+date: "February 2, 2018"
+output:
+  html_notebook: default
+  html_document: default
+  pdf_document: default
+---
+
+
+**Packages you will need for this lesson**
+
+1. `deSolve`
+2. `rootSolve`
+3. `ggplot2`
+
+If you have already installed them, use these commands to load them:
+```{r, message=FALSE}
+library(deSolve)
+library(rootSolve)
+```
+If you haven't already installed them, you can use the `install.package("rootSolve")` command to install them.
+
+******
+
+## Calculating Equilibrium Densities, Analytically and Numerically
+
+In the first week you learned how to solve ordinary differential equations in R using the `lsoda` function in the `deSolve`package. The range of possible dynamics for some models can be quite extensive, and can depend on the particular choices of parameter values and initial values of the state variables.  In this exercise, we will explore methods for determining the $equilibrium$ values of the state variables for models consisting of systems of ordinary differential equation.  
+
+An *equilibrium* is a constant solution to a set of differential equations.  The equilibrium is the value of the state variables in a model for which the rates of change of the state variables are equal to zero.
+
+Mathematically, for the differential equation $\frac{dN}{dt}=f\left(N\right)$, the equilibrium value of the state variable $N$, which we will denoted as $N^*$, is the value of $N^*$ for which $f\left(N^*\right) = 0$.  (Note: The $^*$ notation isn’t universal; many different conventions are used to specify equilibrium values in the literature).
+
+In this exercise, we will explore 3 different methods for determining the equilibrium solution to models: 
+
+******
+**1. Simulation.** For specified values of parameters and initial conditions of the state variable, we can simply run the model for a long time period and see if the state variables level off at an equilibrium value.
+
+$Advantages$: It’s easy. We already have the tools to do this. We can attempt this with any model.
+
+$Disadvantages$:  
+(a) It requires specifying the values of all parameters and the initial values of all state variables.
+
+(b) The trajectories of the state variables will level off at an equilibrium value only if the equilibrium is stable. If the equilibrium is unstable, then the long-term solution of the system of differential equations may be exponential growth (or decline), population cycles, or a chaotic trajectory, rather than a point equilibrium. 
+
+(c) Even if the equilibrium is stable, it can take a long time for population trajectory to settle at the equilibrium (e.g. see Hastings, A. 2004. Transients: the key to long-term ecological understanding? TREE 19(1):39-45). 
+
+(d) Some models can have multiple equilibria, such that for a particular set of parameters the model may settle at different equilibrium values depending on the initial values of the state variables chosen. This means that simulations may need to be started at a range of values of the state variables to ensure that there is only one equilibrium. 
+
+******
+**2. Analytically** For some models, we can write down an analytical expression for $N^{*}$ by using algebra to solve the equation 
+$f(N^{*})= 0$ 
+for $N^*$. 
+
+$Advantages$: We don’t need to specify specific values for the parameters, so we can interpret the effects of changing the values of parameters for all of parameter space.
+
+$Disadvantages$:  
+Sometimes it's not possible to obtain an explicit, closed-form, solutions to the equation 
+$f(N^{*})= 0$, i.e. transcendental equations, e.g. 
+$f(N^{*}) = e^{-N^{*}} - N^{*}$.  Also, sometimes solving for the equilibrium solutions can require some really messy algebra. 
+
+******
+**3. Numerically** We can use one of a number of numerical methods to numerically find the solution
+$N^*$ to the equation 
+$f(N^{*})= 0$ 
+for specified values of parameters.
+
+$Advantages$: We can numerically find solutions to equations for which it is not possible to find explicit, closed-form, solutions (e.g. transcendental equations). We can numerically find the equilibrium values, even if the equilibrium is not stable.
+
+$Disadvantages$:  
+This approach requires specifying the values of all parameters. It also requires making an initial guess at the equilibrium solution. If the guess is too far from the actual equilibrium, then the numerical methods may fail to converge on the solution.  If the model has multiple equilibria, then it may not find all equilibrium values (or may require investigating many starting guesses to find all equilibrium values).  
+
+******
+
+## A simple predator-prey model
+We begin with a simple predator-prey model as an illustration of a model in which we can calculate the equilibrium values of the state variables all three ways: through simulations, analytically, and numerically.  
+
+The state variables in the model are:
+
+$N(t) =$ density of prey at time t  
+$P(t) =$ density of predators at time t.
+
+The differential equations for the prey and predator are:
+$$
+\begin{align}
+    &\text{prey} && \frac{dN}{dt} = I_N - d_NN - aNP \\
+    \\
+    &\text {predators} && \frac{dP}{dt} = caNP - d_PP
+\end{align}
+$$
+where:
+$I_N$ is the rate of immigration of prey into the prey population.  
+We assume that the prey do not reproduce in the population, but die at per-capita rate $d_N$.  
+Predators have a type I functional response (i.e. the rate that prey are eaten by predators increases linearly with the density of prey), with attack rate $a$.  
+$c$ is the predator conversion efficiency (each prey eaten is converted into $c$ new predators).
+$d_P$ is the predator per-capita death rate.
+
+******
+
+#### Exercise 1. Prey alone
+
+Start by assuming that there are no predators in the system (i.e. set P=0).  **What is the equilibrium density for the prey population in the absence of the predator?**
+
+In the absence of the predators, the prey population becomes: 
+
+$$
+\frac{dN}{dt} = I_N - d_NN 
+$$
+
+1. **Solve for the equilibrium through simulation:**
+The equilibrium values of the state variables in a model are the values for which the rate of change is equal to zero.  If you start the model with the state variables at the equilibrium, they should remain at the equilibrium.
+
++ Create an R script that solves this equation using deSolve. This requires chosing values for the parameters $I_N$ and $d_N$, and initial conditions for the state variable $N$. Let $I_N = 10$, $d_N = 0.2$, and $N(0) = 2$.  (You should find that the density of prey increases and then levels off at a density of 50.)
+
++ What happens if you run the model starting at N(0) = 50? Try it.  (You should find that the density of prey remains at a density of 50. That is, for this set of parameters, the equilibrium density for the prey population in the absence of the predator is 50.)
+
+
+2. **Solve for the equilibrium analytically:**
+For this simple model, we did not need to go through all of this work to determine the equilibrium prey density.  We can calculate it with just a little bit of algebra.  All we need to do is replace all of the $N$'s in the right hand side of the differential equation with $N^*$'s, and set the right hand side of the differential equation equal to zero: 
+$I_N – d_N N^* = 0$
+and solve for the equilibrium, $N^*$:  
+    $N^*=\frac{I_N}{d_N}$
+
+    This is the analytical expression for $N^*$.  We can see that the equilibrium prey density increases as the prey immigration rate $I_N$ increases, and decreases as the prey death rate $d_N$ increases, for all positive values of $I_N$ and $d_N$. 
+
+    We can confirm that this analytical result is consistent with the result that we obtained from simulation by plugging in $I_N = 10$ and $d_N = 0.2$, and finding that the equilibrium for these parameters should in fact be $N^* = 50$.
+
+
+3. **Solve for the equilibrium numerically:**
+This approach isn't really necessary for this simple model, for which we already have an analytical expression for $N^*$, but we’ll illustrate the approach with this model. We will make use of the package `rootSolve` in R to do this. `rootSolve` is a nonlinear root-finding package that has a number of useful functions ("root"" is a more formal way to say the "solution"" to the equation).  We’ll use these two:  
+
+    `uniroot.all` solves for all roots of one (nonlinear) equation  
+    `multiroot`   solves for $n$ roots of $n$ (nonlinear) equations 
+ 
+    Make sure you have installded and loaded the R package rootSolve:  
+    `install.packages("rootSolve")`  
+    `library("rootSolve")`  
+    
+    For this example, we will use the function `uniroot.all`, which searches the interval from *lower* to *upper* for all roots of a function with respect to its first argument. The function calls `uniroot`, which is basic R-function (which you could also use for this example). 
+
+To do this, we need to specify the values of the parameters:
+```{r}
+I_N <- 10   # prey immigration rate 
+dN <- 0.2   # prey death rate
+```
+
+and write a function that returns the right hand side of the differential equations for a given value of $N$ and the parameters (I called my function `RHS_prey` for Right Hand Side of prey equation):
+```{r}
+RHS_prey<- function(N, I_N, dN) {
+    I_N - dN*N
+}
+```
+
+We then find the prey equilibrium by calling function `uniroot.all`, specifying the interval of values of $N$ to search over: `uniroot.all(function, interval, ...)`, where in the `...` we can pass the values of the parameters needed for our function. 
+```{r}
+prey_equilibrium <- uniroot.all(RHS_prey, c(0, 100), I_N=I_N, dN = dN)
+```
+ 
+In this case I’ve searched over the interval from $N = 0$ to $N = 100$, and we get the correct answer:
+```{r}
+prey_equilibrium
+```
+
++ What happens if you search over the interval from N = 0 to N = 10?
+
+We can make a plot showing how the prey density changes as a function of the prey immigration rate, with $d_N$ set equal to 0.2.  You can do this with a `for` loop:
+```{r}
+dN<-0.2 						      # set a value for prey death rate
+I_N_all<-seq(0,20,0.1)		# use a sequence of values for I_N
+
+# set up a vector to store prey equilibrium values 
+prey_equilibrium<-rep(0,length(I_N_all))	
+							
+for (i in 1:length(I_N_all)) {  # loop through all values of I_N
+	
+# Calculate the equilibrium value of N for each value of I_N
+    prey_equilibrium[i] <- uniroot.all(RHS_prey,c(0,200),I_N=I_N_all[i], dN = dN)
+}
+plot(I_N_all,prey_equilibrium, type = "l", col="blue", xlab="Prey immigration rate, I_N",ylab="Prey equilibrium, N*")
+```
+
+Or, you could avoid the `for` loop by using the `sapply` function:
+
+```{r}
+dN<-0.2 						      # set a value for prey death rate
+I_N_all<-seq(0,20,0.1)		# use a sequence of values for I_N
+
+myfun<-function(x) {
+  uniroot.all(RHS_prey,c(0,200),I_N=x, dN = dN)
+}
+
+prey_equilibrium<-sapply(I_N_all,myfun)
+
+```
+
+******
+
+#### Exercise 2. Equilibrium with both Predator and Prey
+Now let's add the predator back in.
+$$
+\begin{align}
+    &\text{prey} && \frac{dN}{dt} = I_N - d_NN - aNP \\
+    \\
+    &\text {predators} && \frac{dP}{dt} = caNP - d_PP
+\end{align}
+$$    
+
+1. **Solve for the equilibrium through simulation:**
++ Create an R script that solves these equation using `deSolve`. This requires chosing values for all of the the parameters, and initial conditions for the state variables $N4 and $P$. Let $I_N = 10$, $d_N = 0.2$, $a = 0.01$, $c = 0.5$, $d_P = 0.1$, with $N(0) = 2$ and $P(0) = 2$.
+
+    The prey population levels off at a value of 30, and the predator population levels off at a value of 20.  If you start the model at these equilibrium values $N(0) = 30$ and $P(0) = 20$, the populations should remain at those densities.  For this combination of parameters, the model has a stable equilibrium solution at $N^* = 30$, and $P^* = 20$, at which the rates of change of both populations are equal to zero.
+
+2. **Solve for the equilibrium analytically:**
+To calculate the equilibrium solution for the predator-prey model we set $N = N^*$ and $P = P^*$ and set the right hand side of both differential equations equal to zero.  We then find the solution to the two simultaneous equations: 
+$$
+\begin{align}
+   & I_N - d_NN^* - aN^*P^*=0\\
+    \\
+  & caN^*P^* - d_PP^* = 0
+\end{align}
+$$  
+With a little algebra, we can see that the second of these two equations is true either if $P^* = 0$, or if $N^*=\frac{d_P}{ca}$.  Plugging each of these solutions into the first equation one at a time reveals that this system has two equilibria:  
+The equilibrium without the predator present (which we’ve already found, above):
+   $N^*=\frac{I_N}{d_N}$ , $P^* = 0$
+
+    and the equilibrium with both species present:
+    $N^*=\frac{d_P}{ca}$,  $P^*= \frac{c a I_N - d_N d_P}{a d_P}$
+
+    Inspecting these equations, we can see that depending on the values of the parameters, it is possible for the predator equilibrium to be negative (which really doesn't make sense biologically).  With a little more algebra, we can see that the predator can persist in the system, and have a positive equilibrium, $P^* > 0$, only if: $I_N>d_N \left(\frac{d_P}{c a}\right)$.  If the prey immigration rate is below this value, then the predator cannot persist on the prey population.
+    
+    It's useful to have an analytical expression for the equilibrium, because we can see how each of the parameters affects the equilibrium, without having to specify the exact values of all of the parameters. 
+
+3. **Solve for the equilibrium numerically:**
+Because we now have two equations that we want to solve simultaneously, we will use the R function `multiroot` from the package `rootSolve`.  Given a vector of $n$ variables, and a set of $n$ (nonlinear) equations in these variables, `multiroot` estimates the root of the equations, i.e. the values of the variables where all function values = 0. `multiroot` uses the **Newton-Raphson root-solving method**, which you can look up if you’re interested. 
+
+The syntax for calling multiroot is:
+
+`multiroot(f, start, ...)`
+
+where `f` is a the function for which the root is sought; it must return a vector with as many values as the length of `start`. `multiroot` deals with parameters slightly differently than `uniroot.all`.  The function is called either as `f(x, ...)` if `parms = NULL` or as `f(x, parms, ...)` if `parms` is not NULL. 
+`start` is a vector containing initial guesses for the unknown `x`; if start has a name attribute, the names will be used to label the output vector.  
+`...` specifies additional arguments that you don’t need to include yet, but you may want to look into if you end up using this method a lot.
+
+
+Here is the R code for our predator-prey example:
+```{r}
+# this function returns a vector with the right hand sides of the ODEs
+RHS_prey_pred <- function(x, parms) {
+	with(as.list(c(x, parms)),{
+
+      c(F1 = I_N - dN*N - a*N*P,
+        F2 = c*a*N*P - dP*P)
+  }) # end with(as.list ...
+}
+
+#specify the values of the parameters
+parameters <- c(I_N = 10, dN = 0.2, a = 0.01, c = 0.5, dP = 0.1)
+
+#specify the starting guesses for the two state variables
+x<-c(N=10,P=10)
+
+#call multiroot
+eqm<-multiroot(RHS_prey_pred, x, parms = parameters)
+
+#the equilibrium values are stored in the root part of eqm
+eqm$root
+```
+
+
+The result agrees with what we found from our simulation, and from the equilibrium values that we calculated analytically. 
+
+if you just type in eqm, you’ll see that multiroot also gives you other information about how well the numerical root solving routine did (the precision, and the number of iterations the numerical routine took). 
+
++ What happens to the prey equilibrium if you increase the value of the prey immigration rate?  What happens to the predator equilibrium?
+
+
+******
+
+## Calculating Equilibrium Values in Discrete Time Models
+Now consider the discrete-time **Nicholson-Bailey host-parasitoid model**:
+$$
+\begin{align}
+    &\text{host} && H_{t+1} = R H_t f\left(P_t\right) \\
+    \\
+    &\text{parasitoid} && P_{t+1} = c H_t \left[1-f\left(P_t\right)\right]
+\end{align}
+$$    
+where f\left(P_t\right) is the fraction of hosts that escape parasitism. The simplest form of this assumes that this is the zero term of a Poisson distribution with mean = $aP_t$. 
+$$
+f\left(P_t\right) = \exp \left(-aP_t\right)
+$$
+
+******
+
+#### Exercise 3. Solve for the equilibrium analytically:
+Take some pen and paper and calculate the values of the state variables, $H^*$ and $P^*$ for which:  
+$H_{t+1} = H_t = H^*$  
+and  
+$P_{t+1} = P_t = P^*$  
+
+
+******
+
+#### Exercise 4. Solve for the equilibrium through simulation
+Use R to obtain a numerical solution to the Nicholson-Bailey host-parasitoid model. (Remember from last week, you need to use a `for` loop to do this.) 
+You can use the parameters: $R = 2$, $a = 0.05$ and $c = 0.9$.  
+
+* Try starting the host and parasitoid at their equilibrium densities (that you calculated in Exercise 3).  
+* Try starting a little away from equilibrium.  
+
+The equilibrium for this model is wildly unstable!  Simulation is useless for calculating the equilibrium values. 
+
+
+******
+
+#### Exercise 5. Solve for the equilibrium numerically:
+`multiroot` can be used to find the equilibrium for discrete-time models too.  It requires writing a function that lists the equations that are set equal to zero at equilibrium.  For discrete-time models, this just involves rearranging the equations a bit. 
+
+To calculate the equilibria for the Nicholson-Bailey host-parasitoid model, we set $H_{t+1} = H_t = H^*$  and  $P_{t+1} = P_t = P^*$.
+
+$$
+\begin{align}
+    & H^* = R H^* \exp \left(-a P^*\right) \\
+    \\
+    & P^* = c H^* \left[1-\exp \left(-a P^*\right)\right]
+\end{align}
+$$  
+These equations can be re-written in a form that multiroot can use:
+
+$$
+\begin{align}
+    & H^* - R H^* \exp \left(-a P^*\right) = 0 \\
+    \\
+    & P^* - c H^* \left[1-\exp \left(-a P^*\right)\right] = 0
+\end{align}
+$$  
+The code for this is:
+```{r}
+R <- 2
+a <- 0.05
+c <- 0.9
+
+#specify the values of the parameters
+parameters <- c(R = R, a = a, c = c)
+
+
+# This function returns the set of equations that are to be set equal to zero
+Nicholson_Bailey_eqm <- function(x, parms) {
+  with(as.list(c(x, parms)),{
+    
+    c(F1 = H - R*H*exp(-a*P),
+      F2 = P - c*H*(1-exp(-a*P)))
+  }) # end with(as.list ...
+}
+
+#specify the starting guesses for the two state variables
+x<-c(H=10,P=10)
+
+#call multiroot
+eqm<-multiroot(Nicholson_Bailey_eqm, x, parms = parameters)
+
+#the equilibrium values are stored in the root part of eqm
+eqm$root
+
+# check to see if it found the correct equilibrium
+Pstar <- log(R)/a
+Hstar <- Pstar*R/(c*(R-1))
+
+Hstar
+Pstar
+
+```
+
+******
+
+******
+
+## Homework #3: Try it yourself!
+
+**Do any 1 of the following:**
+
+1. Try making *any* modification to the simple continuous-time predator-prey model that you're interested in, and try calculating the equilibrium through simulation, analytically, and numerically.  Try varying 1 or more of the parameters and see what happens to the equilibrium.
+
+    *or* 
+
+2. Try making *any* modification to the discrete-time Nicholson-Bailey Host-Parasitoid model that you're interested in, and try calculating the equilibrium through simulation, analytically, and numerically. Try varying 1 or more of the parameters and see what happens to the equilibrium.
+
+    *or* 
+
+3. Write down your own model consisting of 2 or more *non-linear* ordinary differential equations (or 2 or more non-linear discrete-time difference equations), and try calculating the equilibrium through simulation, analytically, and numerically.  Try varying 1 or more of the parameters and see what happens to the equilibrium.
+
+
+******
+
+******
+
+
+## R tutorial, Part 3: Importing and Manipulating Data in R
+*Portions of this lesson were adopted from a Software Carpentry tutorial by Mark Wilber.*
+
+### 1. Working directory
+Any process running on your computer has a notion of its “working directory”. In R, this is where R will look, by default, for files you ask it to load. It also where, by default, any files you write to disk will go.
+
+You can explicitly check your working directory with:
+```{r}
+getwd()
+```
+
+(Of course, your working directory will be different from mine!)
+
+You can set R’s working directory at the command line like so. You could also do this in a script.
+```{r, eval = F}
+setwd("/Users/Cherie/Dropbox/courses/EEMB247")
+```
+
+*****
+
+###2. Importing Data
+On the course website on gauchospace, there is a data file called: `frog_data.csv`
+This file contains a made up dataset that includes the properties that we have measured on 30 individual frogs. Download this dataset from gauchospace and put it in the working directory that you are using for this exercise. 
+
+We can load the data into R using the function `read.csv()`, or `read.table()`: 
+```{r}
+frog <- read.csv("frog_data.csv", header = TRUE)
+```
+
+`read.csv` has two arguments: the name of the file we want to read, and whether the first line of the file contains names for the columns of data. The filename needs to be a character string (or string), so we put it in quotes. Assigning the second argument, header, to be TRUE indicates that the data file does have column headers.
+
+We can also use `read.table()`, but we need to specify what separator character is used in the datafile.  For .csv files, the data fields are separated by commas.
+```{r}
+frog <- read.table("frog_data.csv", header = TRUE, sep = ",")
+```
+
+*Tip:* `read.csv` and `read.table` actually have many more arguments that you may find useful when importing your own data in the future. You learn more about these options by typing `?read.csv` or `?read.table`.
+
+*****
+
+### 3. Examining the data structure
+Now that our data is in memory, we can start doing things with it. First, let's ask what type of thing frog is:
+```{r}
+class(frog)
+```
+The `read.csv` and `read.table` commands create a **data frame**, in this cased the name of the data frame is frog.  Data frames are very useful for storing data because you can have a continuous variable, e.g. weight, in one column and a categorical variable, e.g. golor, in another.
+
+Here are some useful dataframe functions
+
+#### Useful data frame functions
+
+* `head()` - shown first 6 rows
+* `tail()` - show last 6 rows
+* `dim()` - returns the dimensions
+* `nrow()` - number of rows
+* `ncol()` - number of columns
+* `str()` - structure of each column
+* `names()` - shows the names attribute for a data frame, which gives the column names.
+
+For example, we can look at the first few rows of our data set by typing:
+
+```{r}
+head(frog)
+```
+If you are using Rstudio, you can also just look at your data in the RStudio viewer. 
+
+*****
+
+### 4. Column types
+A data frame is made up of columns of data. The columns do not have to have the same type.
+
+You can view your column names using `colnames(frog)` or `names(frog)`.
+```{r}
+colnames(frog)
+```
+
+We can use the `class()` function to examine a single column.
+```{r}
+# Look at the fifth column 
+colnames(frog)[5]
+frog[,5]
+class(frog[,5])
+```
+
+The function `str()` gives information about all the columns in a dataframe.
+```{r}
+str(frog)
+```
+The columns for color, sex, and virus are factors.  **Factors** are a very useful datatype in R that you will use a lot if you do statistics in R.  
+
+*****
+
+### 5. Addressing data
+There are 3 main ways to address data in a data frame:
+
+* By Index
+* By Logical vector
+* By Name (columns only)
+
+*****
+
+#### 5.1 By Index
+We can see the dimensions, or shape, of the data frame like this:
+```{r}
+dim(frog)
+```
+This tells us that our data frame, `frog`, has 30 rows and 7 columns.
+
+If we want to get a single value from the data frame, we can provide an index in square brackets, just as we did when indexing arrays and vectors.
+```{r}
+# Take the value in the 1st row and 2nd column of frog, and store it in x
+x<- frog[1, 2]
+x
+
+# Take the value in the 20th row and 4th column of frog, and store it in y
+y<-frog[20, 4]
+y
+```
+An index like `[20, 4]` selects a single element of a data frame, but we can select whole sections as well. For example, we can select the first ten frogs (rows) of values for the first four variables (columns) like this:
+```{r}
+frog[1:10, 1:4]
+```
+The slice `1:4` means, "Start at index 1 and go to index 4."
+
+A slice does not need to start at 1, e.g. the line below selects rows 5 through 10:
+```{r}
+frog[5:10, 1:4]
+```
+We can use the function `c`, which stands for combine, or catenate, or concatenate (depending on who you ask) to select non-contiguous values:
+```{r}
+frog[c(1, 8, 10, 12), c(2, 3, 6)]
+```
+We also don't have to provide a slice for either the rows or the columns. If we don't include a slice for the rows, R returns all the rows; if we don't include a slice for the columns, R returns all the columns. If we don't provide a slice for either rows or columns, e.g. `frog[, ]`, R returns the full data frame.
+```{r}
+# All columns from row 5
+frog[5, ]
+```
+```{r}
+# All rows from column 4
+frog[, 4]
+```
+
+*****
+
+#### 5.2 Logical addressing
+We have seen how to address data structures using an index. Logical addressing is another useful approach. Logical vectors can be created using  *Relational Operators*,  e.g. `< , > , == , !=`.
+
+```{r}
+# Get all frogs with weight greater than 10. weight is column 3.
+x <- frog[, 3] > 10
+x
+frog[x, 3]
+```
+
+*****
+
+#### 5.3 By name
+Columns in a dataframe can be named. In our case these names came from the header row of the csv file. Column names can be listed with the `names()` command.
+```{r}
+names(frog)
+```
+
+Columns can be addressed using the $ operator:
+```{r}
+frog$sex
+frog$virus
+```
+
+Or, alternatively:
+```{r}
+frog['sex']
+frog['virus']
+```
+How are these two approaches different? The `$` syntax returns a vector and the bracket syntax returns a dataframe.
+```{r}
+class(frog$sex)
+class(frog['sex'])
+```
+
+*****
+
+> **Exercise 1** A subsection of a data frame is called a slice. We can take slices of character vectors as well:
+```{r}
+element <- c("o", "x", "y", "g", "e", "n")
+# first three characters
+element[1:3]
+# last three characters
+element[4:6]
+```
+> 1. If the first four characters are selected using the slice `element[1:4]`, how can we obtain the first four characters in reverse order?
+> 2. What is `element[-1]`? What is `element[-4]`? Given those answers, what does `element[-1:-4]` do?
+> 3.  Returning to the dataset, select all rows in frog with upper case "M" for sex. How many are there?
+
+*****
+
+####Combining indexing and assignment
+We have seen how we slice data using indexing and how we can assign values to variables using the assignment operator. We can combine these two operations:
+
+```{r}
+x <- c(5,3,7,10,15,13,17)
+
+# When x is greater than 10 set it to zero
+x[x > 10] <- 0
+x
+```
+
+*****
+
+>
+> **Exercise 2**
+>Combine indexing and assignment to "correct"" the weight column in the frog so that all values of weight that are greater than 12.0 are set equal to 12.0.
+>
+
+*****
+
+###6. Factors
+*This section is taken from the datacarpentry lessons git@github.com:datacarpentry/datacarpentry.git
+
+Factors are used to represent categorical data. Factors can be ordered or unordered and are an important class for statistical analysis and for plotting.
+
+Factors are stored as integers, and have labels associated with these unique integers. While factors look (and often behave) like character vectors, they are actually integers under the hood, and you need to be careful when treating them like strings.
+
+Once created, factors can only contain a pre-defined set values, known as levels. By default, R always sorts levels in alphabetical order. For instance, if you have a factor with 2 levels:
+
+```{r}
+sex <- factor(c("male", "female", "female", "male"))
+sex
+```
+
+R will assign 1 to the level `"female"` and 2 to the level `"male"` (because `f` comes before `m`, even though the first element in this vector is `"male"`). You can check this by using the function `levels()`, and check the number of levels using `nlevels()`:
+```{r}
+levels(sex)
+nlevels(sex)
+```
+
+Sometimes, the order of the factors does not matter, other times you might want to specify the order because it is meaningful (e.g., "low", "medium", "high") or it is required by particular type of analysis. Additionally, specifying the order of the levels allows to compare levels:
+```{r, eval = F}
+food <- factor(c("low", "high", "medium", "high", "low", "medium", "high"))
+levels(food)
+food <- factor(food, levels=c("low", "medium", "high"))
+levels(food)
+min(food) ## doesn't work
+```
+
+```{r}
+food <- factor(food, levels=c("low", "medium", "high"), ordered=TRUE)
+levels(food)
+min(food) ## works!
+```
+In R's memory, these factors are represented by numbers (1, 2, 3). They are better than using simple integer labels because factors are self describing: `"low"`, `"medium"`, and `"high"` is more descriptive than `1`, `2`, `3`. Which is low? You wouldn't be able to tell with just integer data. Factors have this information built in. It is particularly helpful when there are many levels (like the subjects in our example data set).
+
+*****
+
+####Converting factors
+If you need to convert a factor to a character vector, simply use `as.character(x)`. For example,
+```{r}
+as.character(food)
+```
+
+Converting a factor to a numeric vector is however a little trickier, and you have to go via a character vector. Compare:
+
+```{r}
+f <- factor(c(1, 5, 10, 2))
+as.numeric(f)               ## wrong! and there is no warning...
+as.numeric(as.character(f)) ## works...
+as.numeric(levels(f))[f]    ## The recommended way.
+```
+
+*****
+
+> **Exercise 3** 
+>
+> The function table() tabulates observations and can be used to create bar plots quickly. For instance:
+>
+> ```{r}
+exprmt <- factor(c("treat1", "treat2", "treat1", "treat3", "treat1", "control", "treat1", "treat2", "treat3"))
+table(exprmt)
+barplot(table(exprmt))
+> ```
+>
+> **Question**: How can you recreate this plot but by having "control" being listed last instead of first?
+>
+
+*****
+
+####Removing levels from a factor
+
+We can create a new dataset with only the blue and green frogs from our original frog dataset: 
+
+```{r}
+bgfrog<-frog[(frog$color=="blue")|(frog$color=="green"),]
+```
+
+But, R still thinks that "red" and "yellow" are valid levels of color:
+```{r}
+levels(bgfrog$color)
+```
+
+The `droplevels` function will remove any unused levels of factors:
+```{r}
+bgfrog <- droplevels(bgfrog)
+levels(bgfrog$color)
+```
+
+*****
+
+### 6. Manipulating Data
+Now let's perform some common mathematical operations to learn about our frog data. When analyzing data we often want to look at partial statistics, such as the maximum value per frog or the average number of worms per frog Look at the your data:
+
+```{r}
+head(frog)
+```
+
+Let's find the region with the maximum number of worms for green colored frogs. One way to do this is to select the data we want to create a new temporary data frame, and then perform the calculation on this subset:
+
+```{r}
+# green frogs
+gfrog <- frog[frog$color=="green",]
+
+#max worms for green frogs
+max(gfrog$worms)
+```
+
+We don't actually need to store the subset of green frogs. Instead, we can combine the selection and the function call:
+
+```{r}
+# max worms for green frogs
+max(frog$worms[frog$color=="green"])
+```
+
+R also has functions for other commons calculations, e.g. finding the minimum, mean, median, and standard deviation of the data:
+
+```{r}
+# minimum number weight of frogs
+min(frog[, 3])
+# or 
+min(frog$weight)
+
+# mean number of worms per frog
+mean(frog$worms)
+
+# median number of worms per frog
+median(frog$worms)
+
+# standard deviation of number of worms per frog
+sd(frog$worms)
+```
+
+**Tip:** Using the function `summary(frog)` will give us summary statistics of all of the columns in the dataset.
+```{r}
+summary(frog)
+```
+
+******
+
+#### The `apply` function
+
+**Tip:** To learn about a function in R, e.g. `apply`, we can read its help documentation by running `help(apply)` or `?apply`.
+
+`apply` allows us to repeat a function on all of the rows (`MARGIN = 1`) or columns (`MARGIN = 2`) of a data frame.
+
+To obtain the average numeber of worms we will need to calculate the mean of all of the rows (MARGIN = 1) of the data frame.
+
+Say we want to combine the two types of parasites, worms and fungus, and find the total number of parasites per frog. We could do this with the apply function:
+```{r}
+parasites<- apply(frog[,c(5,7)],1,sum)
+parasites
+```
+Since the second argument to apply is MARGIN, the above command is equivalent to `apply(frog[,c(5,7)],MARGIN = 1,sum)`.
+
+
+Alternatively, we could create a new column in the dataset that is the sum of the number of worms plus the number of fungal zoospores (fungus):
+```{r}
+frog$parasites<-frog$worms + frog$fungus
+frog$parasites
+```
+
+**Tip**: Some common operations have more efficient alternatives. For example, you can calculate the row-wise or column-wise means with `rowMeans` and `colMeans`, respectively.
+
+*****
+
+### 7. Outputting Data
+If you want to export a data frame to a csv file, you can use the function `write.csv`:
+
+```{r}
+write.table(frog, file = "newfrog.csv")
+```
+
+There are additional optional argument, such as `append`, which allows you to add data to the end of an existing csv file.  There is also the `write.table` functions, if you want to use something other than a comma to separate the values in your output file. 
+
+*****
+

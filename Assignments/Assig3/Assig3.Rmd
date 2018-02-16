@@ -1,0 +1,174 @@
+---
+title: "Assignment 3"
+subtitle: "Calculating Equilibria"
+author: "Juan Carlos Villaseñor-Derbez"
+date: "February 8, 2018"
+header-includes: #allows you to add in your own Latex packages
+- \usepackage{float} #use the 'float' package
+- \floatplacement{figure}{H} #make every figure with caption = h
+output:
+    bookdown::pdf_document2:
+      toc: no
+      fig_caption: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, fig.height = 3, fig.width = 5, fog.pos = "h", fig.split = "center")
+```
+
+The original predatory - prey model reviewed during class is given by Eq \ref{eq:pred-prey}:
+
+\begin{equation}
+\begin{split} \label{eq:pred-prey}
+    \frac{dN}{dt} &= I_N - d_NN - aNP \\
+    \frac{dP}{dt} &= caNP - d_PP
+\end{split}
+\end{equation}
+
+If we assume N and P to be fish (or any other marine organisms), we might want to explore how fishing for a predator affects the interspecific dynamics. In this case, predatory release of N from P (due to fishing) should yield a higher equilibrium for N and a lower one for P. The new model takes the form of Eq \ref{eq:pred-prey-f}
+
+\begin{equation}
+\begin{split} \label{eq:pred-prey-f}
+    \frac{dN}{dt} &= I_N - d_NN - aNP \\
+    \frac{dP}{dt} &= caNP - d_PP -fP
+\end{split}
+\end{equation}
+
+The new term, $fP$ represents the portion ($f$) of a population that is harvested (*i.e.* fishing mortality). For now, this model assumes no density-dependence in catchability; $f$ is constant over time.
+
+## Solve for the equilibrium through simulation
+
+```{r}
+pred_prey <- function(t, values, params){
+  # Extract initial conditioons
+  N <- values[1]
+  P <- values[2]
+  
+  # Extract parameters
+  In <- params[1]
+  dn <- params[2]
+  a <- params[3]
+  c <- params[4]
+  dp <- params[5]
+  f <- params[6]
+  
+  # Define system of equations
+  dNdt <- (In - dn*N) -(a*N*P)
+  dPdt <- (c*a*N*P) - (dp*P) -(f*P)
+
+  return(list(c(dNdt, dPdt)))
+}
+```
+
+```{r}
+# Load packages
+suppressPackageStartupMessages({
+  library(rootSolve)
+  library(deSolve)
+  library(tidyverse)})
+```
+
+To see how fishing effort affects the dynamics, we will compare a scenario without fishing mortality (*i.e.* $f = 0$) and a scenario where fishing mortality is set at $f = 0.05$. Figure \ref{fig:pred-prey-plot} presents the paths followed by predators (blue lines) and prey (red lines) with fishing mortality (solid lines) and no fishing mortality (dashed lines). With fishing mortality, the equilibrium abundances of prey and predator are reduced from 30 and 20 to 20 and 13.3, respectively.
+
+```{r, fig.cap = "\\label{fig:pred-prey-plot}Population paths for prey and predators under fishing and no fishing scenarios."}
+# Define timesteps
+t <- seq(0, 100)
+
+# Define parameters
+In <- 10
+dn <- 0.2
+a <- 0.01
+c <- 0.5
+dp <- 0.1
+f <- 0
+params <- c(In, dn, a, c, dp, f)
+
+# Define initial conditions
+No <- 2
+Po <- 2
+Co <- 0
+values <- c(No, Po)
+
+#Calculate for no fishing
+no_fishing <- lsoda(y = values, times = t, func = pred_prey, parms = params) %>% 
+  as.data.frame() %>% 
+  magrittr::set_colnames(c("time", "N", "P")) %>% 
+  gather(Org, N, -time) %>% 
+  mutate(Scenario = "No Fishing")
+
+#Calculate for a small fishing effort
+f <- 0.05 # Setting fishing effort > 0
+params <- c(In, dn, a, c, dp, f)
+
+lsoda(y = values, times = t, func = pred_prey, parms = params) %>% 
+  as.data.frame() %>% 
+  magrittr::set_colnames(c("time", "N", "P")) %>% 
+  gather(Org, N, -time) %>% 
+  mutate(Scenario = "Fishing") %>% 
+  rbind(no_fishing) %>% 
+  ggplot(aes(x = time, y = N, color = Org, linetype = Scenario)) +
+  geom_line(size = 1) +
+  cowplot::theme_cowplot() +
+  geom_hline(yintercept = c(20), linetype = "dashed") +
+  geom_hline(yintercept = c(13.3, 30)) +
+  scale_color_brewer(palette = "Set1")
+```
+
+
+## Solve for the equilibrium analytically
+
+Taking Eq \ref{eq:pred-prey-f} and setting all $N = N^*$ and $P = P^*$, we obtain:
+
+\begin{equation}
+\begin{split}
+I_N - d_NN^* - aN^*P^* &= 0\\
+caN^*P^* - d_PP^* -fP^* &=  0
+\end{split}
+\end{equation}  
+
+The above equation for the predator can be rearranged into $P^*(caN^* - d_P -f) = 0$, and so a trivial equillibrium is when $P^* = 0$ (*i.e.* there is no predator). Alternatively, another equillibrium is when $N^* = \frac{dp + f}{ca}$. Substituting these values into the first equation, we obtain the equilibrium for when there is no predator ($N^* = \frac{I_N}{d_N}$). Substituting the other value ($N^* = \frac{dp + f}{ca}$), we obtain $P^* = \frac{1}{a}\left(\frac{I_Nca}{d_P + f}-d_N\right)$.
+
+Susbstituting the values used in the previous exercise (with fishing mortality), we can obtain the equillibrium:
+
+$$
+\begin{split}
+P^* &= \frac{1}{0.01}\left(\frac{10\times 0.5 \times 0.01}{0.1 + 0.05}-0.2\right) \\
+P^* &= 13.33
+\end{split}
+$$
+
+$$
+\begin{split}
+N^* &= \frac{d_P + f}{ca} \\
+N^* &= 30
+\end{split}
+$$
+
+\clearpage
+
+## Solve for the equilibrium numerically
+
+```{r}
+# Define a function
+
+RHS_pred_prey_f <- function(x, parms) {
+  with(as.list(c(x, parms)),{
+    c(F1 = I_N - dN*N - a*N*P,
+      F2 = c*a*N*P - dP*P -f*P)
+  })
+}
+
+# Define the parameres
+parameters <- c(I_N = 10, dN = 0.2, a = 0.01, c = 0.5, dP = 0.1, f = 0.05)
+
+# Define initial conditions
+x <- c(N = 10, P = 10)
+
+# Calculate roots
+multiroot(RHS_pred_prey_f, x, parms = parameters)$root %>%
+  knitr::kable(digits = 2,
+               col.names = "Value",
+               booktabs = T,
+               caption = "Roots for equation \\ref{eq:pred-prey-f}") %>% 
+  kableExtra::kable_styling(latex_options = "HOLD")
+```
