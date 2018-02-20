@@ -1,0 +1,188 @@
+---
+title: 'EEMB247/BMSE247: Computer lab 5: Dimensionless form, and Types of Cycles'
+author: "Cherie Briggs"
+date: "February 16, 2018"
+header-includes:
+   - \usepackage{amsmath}
+output:
+  html_document: default
+---
+
+**Packages you will need for this lesson**
+
+`deSolve`
+
+******
+
+##Part 1:  Converting Equations to Dimensionless Form
+*partly modified from Gurney, W. S. C. and Nisbet, R. M. 1998. Ecological Dynamics, pages 50-54, Oxford.*
+
+Most variables and parameters in models have units.  We could measure prey density in units of number of prey per m^2^, or per kilometer^2^, etc.  We could measure the death rate in units of per minute, per day, per year, etc.  However, the behavior of a natural system cannot be affected by the units in which we choose to measure the quantities we use to describe it.
+
+This implies that it should be possible to write down the defining equations of a model in a form independent of the units we use ==> **dimensionless form**.
+
+The key to converting a set of equations to a dimensionless form lies in identifying a **natural scale** or **base unit** for each quantity in the equations, and then using the ratio of each variable to its natural scale in our dynamic description.  Such ratios are pure numbers, dimensionless.
+
+The process of *non-dimensionalization*, or *dimensional analysis*, can serve two purposes:  
+1.	It gives us a way of checking if our model is internally consistent.  For any dynamics equation to be valid, the quantities being equated must be measured in the same units.  Dimensional analysis allows us to ask if our dimensions add up.  
+2.	It allows us to potentially reduce the number of parameters that are controlling the dynamical system.
+
+For example, the following consumer-resource model has 6 parameters, which makes it very difficult to investigate completely the dynamics through simulations alone.  
+
+
+
+$$
+\begin{aligned}
+    &\frac{dN}{dt} = rN\left(1 - \frac{N}{K}\right) -\left(\frac{I_mN}{N+N_H}\right)P \\
+    &\frac{dP}{dt} = \left(\frac{eI_mN}{N+N_H}\right)P -dP \\
+\end{aligned}
+$$
+
+*****
+
+
+**To convert the equation to dimensionless form, go through the following steps:**  
+
+1. Introduce new symbols $N_b$, $P_b$, and $t_b$ to represent the base units of prey, predators, and time.  
+
+2. Define the dimensionless versions of $N$, $P$, and $t$,  by: $\widehat{N} = \frac{N}{N_b}$, $\widehat{P} = \frac{P}{P_b}$, and $\widehat{t} = \frac{t}{t_b}$.  
+
+3. Substitute into the equations:  $N=N_b\widehat{N}$, $P=P_b\widehat{P}$, and $t=t_b\widehat{t}$.  
+
+
+$$
+\begin{aligned}
+    &\frac{d\left(N_b\widehat{N}\right)}{d\left(t_b\widehat{t}\right)} = \frac{N_b}{t_b}\frac{d\widehat{N}}{d\widehat{t}} = rN_b\widehat{N}\left(1 - \frac{N_b\widehat{N}}{K}\right) -\left(\frac{I_mN_b\widehat{N}}{N_b\widehat{N}+N_H}\right)P_b\widehat{P} \\
+    &\frac{d\left(P_b\widehat{P}\right)}{d\left(t_b\widehat{t}\right)} = \frac{P_b}{t_b}\frac{d\widehat{P}}{d\widehat{t}} = \left(\frac{eI_mN_b\widehat{N}}{N_b\widehat{N}+N_H}\right)P_b\widehat{P} -dP_b\widehat{P} \\
+\end{aligned}
+$$
+
+after a little algebra:  
+
+$$
+\begin{aligned}
+  &\frac{d\widehat{N}}{d\widehat{t}} = \underbrace{\left\{r t_b\right\}}_{1}\hspace{1mm}\widehat{N}\left(1 - \widehat{N}\underbrace{\left\{\frac{N_b}{K}\right\}}_{2}\right) - \underbrace{ \left\{ \frac{I_mP_bt_b}{N_b} \right\}}_{3} \left(\frac{\widehat{N}\widehat{P}}{\widehat{N}+\underbrace{ \left\{ \frac{N_H}{N_b} \right\}}_{4}}\right) \\
+   &\frac{d\widehat{P}}{d\widehat{t}} = \underbrace{ \left\{eI_mt_b \right\} }_{5} \left(\frac{\widehat{N}\widehat{P}}{\widehat{N}+\underbrace{ \left\{ \frac{N_H}{N_b} \right\}}_{4}}\right)  - \underbrace{ \left\{ dt_b  \right\} }_{6}  \widehat{P} \\
+\end{aligned}
+$$
+
+The behavior of the system is determined by the 6 **dimensionless** quantities in the {}.
+
+4. Choose the base units.  The key element in the scaling process is the selection of appropriate base units, $N_b$, $P_b$, and $t_b$.  If we make particular choices for our units we can reduce the number of parameters in the model.
+
+We could choose to measure time relative to the growth rate of the prey population at low density (his causes parameter combination 1 to equal 1):  
+$t_b = r^{-1}$  
+ 
+
+We could choose to measure prey density relative to the prey’s carrying capacity (this causes parameter combination 2 to equal 1):  
+$N_b = K$	 
+
+And we could choose to measure predator density in a way that causes parameter combination 3 to equal 1:  
+$P_b = \frac{rK}{I_m}$.
+
+This reduces the number of parameter combinations controlling the dynamics by 3. We can call these three new dimensionless parameters $c_1$, $c_2$, and $c_3$.  
+
+
+$$
+\begin{aligned}
+&\frac{d\widehat{N}}{d\widehat{t}} = \widehat{N} \left(1 - \widehat{N} \right) - \frac{\widehat{N}\widehat{P}}{\widehat{N}+c_1} \\
+&\frac{d\widehat{P}}{d\widehat{t}} = \frac{c_2\widehat{N}\widehat{P}}{\widehat{N}+c_1} - c_3\widehat{P} \\
+\\
+&\text{where:} \\
+&c_1 = \frac{N_H}{K} \\
+&c_2 = \frac{eI_m}{r} \\
+&c_3 = \frac{d}{r}
+\end{aligned}
+$$
+
+*****
+
+> ## Homework #5: Part 1
+>
+> Do **one** of the following:   
+>a. Convert the following model of bacterial growth in a chemostat into dimensionless form:  
+
+
+$$
+\begin{align}
+& \text{bacteria density:}  & \frac{dN}{dt} = &\left(\frac{K_{max}C}{K_N +C} \right)N - \frac{FN}{V} \\
+\\
+& \text{nutrient concentration:} & \frac{dC}{dt} = &-\alpha\left(\frac{K_{max}C}{K_N +C} \right)N - \frac{FC}{V} + \frac{FC_0}{V}
+\end{align}
+$$
+
+>(Hint: If you get stuck, the answer to this exercise can be found in the the file "Notes on dimensionless form from Edelstein-Keshet on gauchospace.)  
+>  
+>**or **  
+>  
+>b. Convert a model of your choice (with 2 or more equations) into dimensionless form.   
+
+*****
+
+
+##Part 2:  Different Types of Cycles
+
+### A. Simple Harmonic Motion
+Consider the **linear** second order differential equation, which describes the movement of a mass on a spring:
+$$
+\frac{d^2x}{dt^2} + Kx=0
+$$
+where $x$ is the displacement of the mass from the spring’s un-stretched position, and $x$ is the spring constant.  
+The solution to this equation was simple harmonic motion, cycles with constant amplitude determined by the initial displacement of the mass.
+
+A second order differential equation can be converted to 2 first order differential equations, which we can solve in R:  
+Define a new variable $y = \frac{dx}{dt}$ (in this case $y$ represents the velocity of the mass).  
+Then $\frac{dy}{dt}=\frac{d^2x}{dt^2}$, and the original equation can be re-written as $\frac{dy}{dt}+Kx = 0$.
+
+We now have two first order equations: 
+
+$$
+\begin{align}
+&\frac{dx}{dt} = y \\
+&\frac{dy}{dt} = -Kx 
+\end{align}
+$$
+
+>## Homework #5: Part 2
+>Use R to plot numerical solutions to this system of equations for K= 1.  Explore the effect of changing the initial conditions.  Plot x vs. time, and x vs. y.
+
+### B. Simple Harmonic Motion
+> ## Homework #5: Part 3
+> Use R to obtain numerical solutions for the non-linear Lotka-Volterra predator-prey model:
+
+$$
+\begin{align}
+& \text{Prey:} && \frac{dN}{dt} = r N - a N P \\	 
+& \text{Predator:} && \frac{dP}{dt} = c a N P - m P
+\end{align}
+$$
+
+
+>Where $r$ is the rate of increase of the prey in the absence of the predator, $a$ is the predator attack rate, $c$ is the predator conversion efficiency, and $m$ is the predator mortality rate.
+> 
+> Plot N versus P (for some combinations of parameters), and try varying the initial conditions. 
+> The amplitude of the cycles depends on the initial conditions, but now the cycles are orbiting the equilibrium predator and prey densities, rather than zero.  These are **neutrally-stable cycles**.  We showed in class that the eigenvalues of the Jacobean matrix for this system are $\lambda = \pm i \sqrt{rm}$. 
+
+
+### C. Stable Limit Cycles
+Now consider this more complicated predator-prey model:
+$$
+\begin{align}
+& \text{Prey:} && \frac{dN}{dt} = r N \left(1 - \frac{N}{K} \right) - \frac{a N P}{1+aT_hN} \\	 
+& \text{Predator:} && \frac{dP}{dt} = \frac{c a N P}{1+aT_hN} - m P
+\end{align}
+$$
+where the prey growth rate is logistic (with a carrying capacity, $K$) and the predator eats the prey according to a saturating, Type II, functional response, where $T_h$ is the handling time (time that it takes the predator to handle each prey).  
+
+The logistic prey growth has a stabilizing effect, and the Type II functional response has a destabilizing effect on the equilibrium.  
+
+> ## Optional Homework #5: Part 4
+>Perform numerical simulations in R to show that for different values of K, this system can have either a stable equilibrium or can produce cycles.  The amplitude of the cycles no longer depends on the initial conditions.  These are **stable limit cycles**.  The system returns to the same cyclic attractor, regardless of the initial conditions.
+
+
+
+
+
+******
+
+******

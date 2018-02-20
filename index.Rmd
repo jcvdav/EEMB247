@@ -19,8 +19,8 @@ output: html_document
 - [Assignment 1](./Assignments/Assig1/Assig1.pdf) - Intro to linear regression
     - [code](./Assignments/Assig1/Assig1.Rmd)
 
-- [Assignment 2](./Assignments/Assig1/Assig2.pdf) - Solutions to Linear Dynamical Systems in discrete and continuous time
-    - [code](./Assignments/Assig1/Assig2.Rmd)
+- [Assignment 2](./Assignments/Assig2/Assig2.pdf) - Solutions to Linear Dynamical Systems in discrete and continuous time
+    - [code](./Assignments/Assig2/Assig2.Rmd)
 
 - [Assignment 3](./Assignments/Assig3/Assig3.pdf) - Calculating Equilibria
     - [code](Assignments/Assig3/Assig3.Rmd)

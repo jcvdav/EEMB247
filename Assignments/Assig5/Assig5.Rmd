@@ -1,0 +1,159 @@
+---
+title: "Assignment 5"
+subtitle: "Dimensionless form and types of cycles"
+author: "Juan Carlos Villaseñor-Derbez"
+date: "February 8, 2018"
+header-includes: #allows you to add in your own Latex packages
+- \usepackage{float} #use the 'float' package
+- \floatplacement{figure}{H} #make every figure with caption = h
+output:
+    bookdown::pdf_document2:
+      toc: no
+      fig_caption: true
+      number_sections: no
+---
+
+```{r, echo = F}
+knitr::opts_chunk$set(echo = F)
+suppressPackageStartupMessages({
+  library(deSolve)
+  library(cowplot)
+  library(tidyverse)
+})
+```
+
+
+# Convert a model of bacterial growth in a chemostat to dimensionless form
+
+$$
+\begin{split}
+\frac{dN}{dt} = &\left(\frac{K_{max}C}{K_N +C} \right)N - \frac{FN}{V} \\
+\frac{dC}{dt} = &-\alpha\left(\frac{K_{max}C}{K_N +C} \right)N - \frac{FC}{V} + \frac{FC_0}{V}
+\end{split}
+\label{eq:chemostat}
+$$
+
+First we need to define variables that split our variables (bacteria, nutrients, time) into a scalar and its dimensions:
+
+- $N^*$, $C^*$, and $t^*$ are the scalars
+- $\hat{N}$, $\hat{C}$, and $\hat{t}$ are the time-independent units such that $N = N^* \times \hat{N}$, $C = C^* \times \hat{C}$, and $t = t^* \times \hat{t}$ represent our measurements.
+
+Therefore, we can re-write Eq \ref{eq:chemostat} as:
+
+$$
+\begin{split}
+\frac{d(N^*\hat{N})}{d(t^*\hat{t})} = &\left(\frac{K_{max}(C^*\hat{C})}{K_N + (C^*\hat{C})} \right) (N^*\hat{N}) - \frac{F(N^*\hat{N})}{V} \\
+\frac{d(C^*\hat{C})}{d(t^*\hat{t})} = &-\alpha\left(\frac{K_{max}(C^*\hat{C})}{K_N + (C^*\hat{C})} \right)(N^*\hat{N}) - \frac{F(C^*\hat{C})}{V} + \frac{FC_0}{V}
+\end{split}
+$$
+We can now multiply both sides by and $\hat{t}$, and divide by $\hat{N}$ and $\hat{C}$ obtaining:
+
+$$
+\begin{split}
+\frac{dN^*}{dt^*} = & \hat{t}K_{max}\left(\frac{C^*}{\frac{K_N}{\hat{C}} + C^*} \right) N^* - \hat{t}\frac{F}{V} N^* \\
+\frac{d(C^*\hat{C})}{d(t^*\hat{t})} = & \frac{-\alpha\hat{t}K_{max}\hat{N}}{\hat{C}}\left(\frac{C^*}{\frac{K_N}{\hat{C}} + C^*} \right)N^* - \hat{t}\frac{F}{V}C^* + \hat{t}\frac{FC_0}{V\hat{C}}
+\end{split}
+$$
+
+Since $V$ is in units of volume, and $F$ represents a flow (*i.e.* volume over time), we can say that $\hat{t} = \frac{V}{F}$. This is also convenient to later re-write the system. By further setting $\hat{C} = K_N$ and $\hat{N} = \frac{\hat{C}}{\alpha\hat{t}K_{max}} = \frac{\hat{K_N}}{\alpha\hat{t}K_{max}}$ we can re-write the system as:
+
+$$
+\begin{split}
+\frac{dN}{dt} = &\left(\frac{K_{max}C}{K_N +C} \right)N - \frac{FN}{V} \\
+\frac{dC}{dt} = &-\alpha\left(\frac{K_{max}C}{K_N +C} \right)N - \frac{FC}{V} + \frac{FC_0}{V}
+\end{split}
+$$
+
+# Numerical simulation of a spring with no dampening
+
+The model is described by:
+
+$$
+\frac{dx}{dt} = y \\
+\frac{dy}{dt} = -Kx
+$$
+
+```{r}
+spring <- function(t, values, params){
+  K <- params[1]
+  
+  x <- values[1]
+  y <- values[2]
+  
+  dxdt <- y
+  dydt <- -K*x
+  
+  return(list(c(dxdt, dydt)))
+}
+```
+
+```{r}
+K <- 1
+params <- c(K)
+
+t <- seq(1, 20, by = 0.1)
+
+Xo <- 2
+Yo <- 0.02
+values <- c(Xo, Yo)
+
+sol <- deSolve::lsoda(y = values, times = t, parms = params, func = spring) %>% 
+  as.data.frame() %>% 
+  magrittr::set_colnames(value = c("Time", "X", "Y")) %>% 
+  mutate(Xo = Xo,
+         Yo = Yo)
+
+Xo <- 2
+Yo <- 1
+values <- c(Xo, Yo)
+
+sol2 <- deSolve::lsoda(y = values, times = t, parms = params, func = spring) %>% 
+  as.data.frame() %>% 
+  magrittr::set_colnames(value = c("Time", "X", "Y")) %>% 
+  mutate(Xo = Xo,
+         Yo = Yo)
+
+Xo <- 1
+Yo <- 0.02
+values <- c(Xo, Yo)
+
+sol3 <- deSolve::lsoda(y = values, times = t, parms = params, func = spring) %>% 
+  as.data.frame() %>% 
+  magrittr::set_colnames(value = c("Time", "X", "Y")) %>% 
+  mutate(Xo = Xo,
+         Yo = Yo)
+
+Xo <- 1
+Yo <- 1
+values <- c(Xo, Yo)
+
+sol4 <- deSolve::lsoda(y = values, times = t, parms = params, func = spring) %>% 
+  as.data.frame() %>% 
+  magrittr::set_colnames(value = c("Time", "X", "Y")) %>% 
+  mutate(Xo = Xo,
+         Yo = Yo)
+```
+
+
+```{r}
+plot1 <- rbind(sol, sol2, sol3, sol4) %>% 
+  mutate(Case = paste0("Xo = ", Xo, "; Yo = ", Yo)) %>% 
+  ggplot(aes(x = Time, y = X, color = Case)) +
+  geom_line() +
+  scale_color_brewer(palette = "Set1") +
+  theme(legend.position = "none")
+
+plot2 <- rbind(sol, sol2, sol3, sol4) %>% 
+  mutate(Case = paste0("Xo = ", Xo, "; Yo = ", Yo)) %>% 
+  ggplot(aes(x = Y, y = X, color = Case)) +
+  geom_line() +
+  scale_color_brewer(palette = "Set1") +
+  facet_wrap(~Case) +
+  theme(strip.background = element_blank())
+
+cowplot::plot_grid(plot1, plot2, labels = "AUTO", ncol = 1)
+```
+
+
+
+
