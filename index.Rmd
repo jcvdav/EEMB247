@@ -13,6 +13,7 @@ output: html_document
 - [Lab 2](./Labs/Lab2/Lab2.html) - Intro to linear regression
 - [Lab 3](./Labs/Lab3/ComputerLab3.nb.html) - Calculating Equilibria
 - [Lab 4](./Labs/Lab4/ComputerLab4.nb.html) - Local Stability Analysis and Separation of Time Scales
+- [Lab 5](./Labs/La54/ComputerLab5.html) - Dimensionless form, and Types of Cycles
 
 # Assignments
 
