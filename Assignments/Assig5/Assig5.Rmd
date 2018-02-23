@@ -2,7 +2,7 @@
 title: "Assignment 5"
 subtitle: "Dimensionless form and types of cycles"
 author: "Juan Carlos Villaseñor-Derbez"
-date: "February 8, 2018"
+date: "`r Sys.Date()`"
 header-includes: #allows you to add in your own Latex packages
 - \usepackage{float} #use the 'float' package
 - \floatplacement{figure}{H} #make every figure with caption = h
@@ -135,7 +135,7 @@ sol4 <- deSolve::lsoda(y = values, times = t, parms = params, func = spring) %>%
 ```
 
 
-```{r}
+```{r, fig.cap = "Different scenarios for a simple harmonic motion of a spring. A shows the distance (X) through time, and B shows the relationship between distance (X) and speed (Y). Red dots indicate initial conditions, blue dots indicate equilibrium."}
 plot1 <- rbind(sol, sol2, sol3, sol4) %>% 
   mutate(Case = paste0("Xo = ", Xo, "; Yo = ", Yo)) %>% 
   ggplot(aes(x = Time, y = X, color = Case)) +
@@ -145,14 +145,116 @@ plot1 <- rbind(sol, sol2, sol3, sol4) %>%
 
 plot2 <- rbind(sol, sol2, sol3, sol4) %>% 
   mutate(Case = paste0("Xo = ", Xo, "; Yo = ", Yo)) %>% 
-  ggplot(aes(x = Y, y = X, color = Case)) +
-  geom_line() +
+  ggplot(aes(x = X, y = Y, color = Case)) +
+  geom_point() +
   scale_color_brewer(palette = "Set1") +
-  facet_wrap(~Case) +
-  theme(strip.background = element_blank())
+  theme(strip.background = element_blank()) +
+  coord_fixed()
+
+bottom <- cowplot::plot_grid(plot2, NULL, ncol = 2)
 
 cowplot::plot_grid(plot1, plot2, labels = "AUTO", ncol = 1)
 ```
+
+# Numerical solutions for the non-linear Lotka-Volterra predator-prey model
+
+\begin{equation}
+\begin{split}
+\frac{dN}{dt} &= r N - a N P \\	 
+\frac{dP}{dt} &= c a N P - m P
+\end{split}
+\end{equation}
+
+```{r}
+lotka <- function(t, values, params){
+  # Extract parameters
+  r <- params[1]
+  a <- params[2]
+  c <- params[3]
+  m <- params[4]
+  f <- params[5]
+
+  # Extract state variables
+  N <- values[1]
+  P <- values[2]
+  
+  dNdt <- (r*N) - (a*N*P)
+  dPdt <- (a*c*N*P) - (m*P)
+  
+  return(list(c(dNdt, dPdt)))
+}
+```
+
+```{r}
+get_plot <- function(r, a, c, m, N0, P0){
+  
+  params <- c(r, a, c, m)
+  values <- c(N0, P0)
+  
+  # Time
+  t <- seq(0, 50, by = 0.05)
+  
+  plot <- deSolve::lsoda(y = values, func = lotka, times = t, parms = params) %>% 
+    as.data.frame() %>% 
+    magrittr::set_colnames(value = c("Time", "N", "P")) %>% 
+    ggplot(aes(x = N, y = P)) +
+    geom_point() +
+    ggtitle(paste0("r = ",r, ", a = ", a, "\nc = ", c, ", m = ", m)) +
+    cowplot::theme_cowplot() +
+    geom_point(aes(x = N0, y = P0), color = "red", size = 4) +
+    geom_point(aes(x = m/(c*a), y = r/a), color = "blue", size = 4) +
+    geom_hline(yintercept = r/a, linetype = "dashed") +
+    geom_vline(xintercept = m/(c*a), linetype = "dashed") +
+    scale_x_continuous(limits = c(0, 12)) +
+    scale_y_continuous(limits = c(0, 4))
+  
+  return(plot)
+}
+```
+
+```{r, fig.height = 9, fig.width = 6, fig.cap = "Combination of parameters and initial conditions for a Lotka-Volterra system with no density dependance and a Type-I functional response."}
+case1 <- get_plot(r = 1, a = 1, c = 0.1, m = 0.1, N0 = 2, P0 = 1)
+case2 <- get_plot(r = 1, a = 1, c = 0.1, m = 0.1, N0 = 4.9, P0 = 1)
+case3 <- get_plot(r = 1, a = 1, c = 0.1, m = 0.1, N0 = 2, P0 = 2)
+case4 <- get_plot(r = 0.5, a = 1, c = 0.1, m = 0.1, N0 = 2, P0 = 1)
+case5 <- get_plot(r = 1, a = 0.5, c = 0.1, m = 0.1, N0 = 4.9, P0 = 1)
+case6 <- get_plot(r = 1, a = 1, c = 0.05, m = 0.1, N0 = 2, P0 = 2)
+
+cowplot::plot_grid(case1, case2, case3, case4, case5, case6, ncol = 2)
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

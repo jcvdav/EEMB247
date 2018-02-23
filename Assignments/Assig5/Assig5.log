@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.14159265-2.6-1.40.17 (MiKTeX 2.9.6100 64-bit) (preloaded format=pdflatex 2017.1.17)  20 FEB 2018 14:59
+This is pdfTeX, Version 3.14159265-2.6-1.40.17 (MiKTeX 2.9.6100 64-bit) (preloaded format=pdflatex 2017.1.17)  22 FEB 2018 16:22
 entering extended mode
 **./Assig5.tex
 (Assig5.tex
@@ -988,28 +988,49 @@ Package hyperref Warning: Suppressing empty link on input line 120.
 [1
 
 {C:/ProgramData/MiKTeX/2.9/pdftex/config/pdftex.map}]
-<Assig5_files/figure-latex/unnamed-chunk-4-1.pdf, id=31, 469.755pt x 325.215pt>
+<Assig5_files/figure-latex/unnamed-chunk-4-1.pdf, id=35, 469.755pt x 325.215pt>
 File: Assig5_files/figure-latex/unnamed-chunk-4-1.pdf Graphic file (type pdf)
 <use Assig5_files/figure-latex/unnamed-chunk-4-1.pdf>
 Package pdftex.def Info: Assig5_files/figure-latex/unnamed-chunk-4-1.pdf used o
-n input line 161.
+n input line 163.
 (pdftex.def)             Requested size: 469.75386pt x 325.2142pt.
-Package atveryend Info: Empty hook `BeforeClearDocument' on input line 164.
-[2 <./Assig5_files/figure-latex/unnamed-chunk-4-1.pdf>]
-Package atveryend Info: Empty hook `AfterLastShipout' on input line 164.
+<Assig5_files/figure-latex/unnamed-chunk-7-1.pdf, id=36, 433.62pt x 650.43pt>
+File: Assig5_files/figure-latex/unnamed-chunk-7-1.pdf Graphic file (type pdf)
+<use Assig5_files/figure-latex/unnamed-chunk-7-1.pdf>
+Package pdftex.def Info: Assig5_files/figure-latex/unnamed-chunk-7-1.pdf used o
+n input line 183.
+(pdftex.def)             Requested size: 433.63878pt x 650.45818pt.
+[2pdfTeX warning (ext4): destination with the same identifier (name{figure.1}) 
+has been already used, duplicate ignored
+
+\AtBegShi@Output ...ipout \box \AtBeginShipoutBox 
+                                                  \fi \fi 
+l.188 
+       <./Assig5_files/figure-latex/unnamed-chunk-4-1.pdf>]
+Overfull \vbox (35.9726pt too high) has occurred while \output is active []
+
+[3pdfTeX warning (ext4): destination with the same identifier (name{figure.2}) 
+has been already used, duplicate ignored
+
+\AtBegShi@Output ...ipout \box \AtBeginShipoutBox 
+                                                  \fi \fi 
+l.188 
+       <./Assig5_files/figure-latex/unnamed-chunk-7-1.pdf>]
+Package atveryend Info: Empty hook `BeforeClearDocument' on input line 190.
+Package atveryend Info: Empty hook `AfterLastShipout' on input line 190.
 (Assig5.aux)
-Package atveryend Info: Executing hook `AtVeryEndDocument' on input line 164.
-Package atveryend Info: Executing hook `AtEndAfterFileList' on input line 164.
+Package atveryend Info: Executing hook `AtVeryEndDocument' on input line 190.
+Package atveryend Info: Executing hook `AtEndAfterFileList' on input line 190.
 Package rerunfilecheck Info: File `Assig5.out' has not changed.
-(rerunfilecheck)             Checksum: 135D9258F01B300C0E4DFDA4ABBF8063;754.
-Package atveryend Info: Empty hook `AtVeryVeryEnd' on input line 164.
+(rerunfilecheck)             Checksum: 730361275F6DE7D388DB514252004060;1185.
+Package atveryend Info: Empty hook `AtVeryVeryEnd' on input line 190.
  ) 
 Here is how much of TeX's memory you used:
- 12468 strings out of 493329
- 179855 string characters out of 3139072
- 289470 words of memory out of 3000000
- 15796 multiletter control sequences out of 15000+200000
- 41877 words of font info for 52 fonts, out of 3000000 for 9000
+ 12489 strings out of 493329
+ 180325 string characters out of 3139072
+ 289969 words of memory out of 3000000
+ 15808 multiletter control sequences out of 15000+200000
+ 42043 words of font info for 54 fonts, out of 3000000 for 9000
  1141 hyphenation exceptions out of 8191
  32i,19n,38p,481b,345s stack positions out of 5000i,500n,10000p,200000b,50000s
 {C:/Program Files/MiKTeX 2.9/fonts/enc/dvips/lm/lm-ec.enc}{C:/Program Files/M
@@ -1027,9 +1048,9 @@ es/MiKTeX 2.9/fonts/type1/public/lm/lmr7.pfb><C:/Program Files/MiKTeX 2.9/fonts
 /type1/public/lm/lmri10.pfb><C:/Program Files/MiKTeX 2.9/fonts/type1/public/lm/
 lmri12.pfb><C:/Program Files/MiKTeX 2.9/fonts/type1/public/lm/lmsy10.pfb><C:/Pr
 ogram Files/MiKTeX 2.9/fonts/type1/public/lm/lmsy7.pfb>
-Output written on Assig5.pdf (2 pages, 199437 bytes).
+Output written on Assig5.pdf (3 pages, 582209 bytes).
 PDF statistics:
- 93 PDF objects out of 1000 (max. 8388607)
- 5 named destinations out of 1000 (max. 500000)
- 10262 words of extra memory for PDF output out of 12000 (max. 10000000)
+ 113 PDF objects out of 1000 (max. 8388607)
+ 10 named destinations out of 1000 (max. 500000)
+ 10275 words of extra memory for PDF output out of 12000 (max. 10000000)
 
