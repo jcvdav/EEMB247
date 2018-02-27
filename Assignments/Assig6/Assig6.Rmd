@@ -1,0 +1,88 @@
+---
+title: "Assignment 6"
+subtitle: "Stochastic Models"
+author: "Juan Carlos Villaseñor-Derbez"
+date: "`r Sys.Date()`"
+header-includes: #allows you to add in your own Latex packages
+- \usepackage{float} #use the 'float' package
+- \floatplacement{figure}{H} #make every figure with caption = h
+output:
+    bookdown::pdf_document2:
+      toc: no
+      fig_caption: true
+      number_sections: no
+---
+
+The system is given by:
+
+$$
+\begin{split}
+   D\hspace{3mm} \xrightarrow{\hspace{3mm} k_1 \hspace{3mm}}& D + M\\
+   M \hspace{3mm} \xrightarrow{\hspace{3mm}  k_2 \hspace{3mm} } & M + P\\
+   M\hspace{3mm} \xrightarrow{\hspace{3mm}  k_3 \hspace{3mm} } & . \\
+   P\hspace{3mm} \xrightarrow{\hspace{3mm}  k_4 \hspace{3mm} } & .
+\end{split}
+$$
+
+In ODE form: 
+
+$$
+\begin{split}
+\frac{dM}{dt} &= k_1D – k_3M \\
+\frac{dP}{dt} &= k_2M – k_4P
+\end{split}
+$$
+
+# Part 1 - Dividing the system into discrete timesteps
+
+The system can be divided into discrete steps expressed as probabilities of gaining $M$, loosing $M$, or $M$ staying the same:
+
+- $P(M\rightarrow M+1)$: $k_1 D \Delta t$
+
+- $P(M\rightarrow M-1)$: $k_3 i \Delta t$
+
+- $P(M \rightarrow M)$: $(1 - k_1 D \Delta t - k_3 i \Delta t)$
+
+```{r}
+# Set a seed for consistent random realizations
+set.seed(43)
+
+# Define initial values
+D <- 1
+M <- 20
+
+# Defien parameters
+k1 <- 0.1
+k3 <- 0.001
+dt <- 0.1
+Tend <- 10000
+time <- seq(0, Tend, dt)
+
+# Define teh cutoff probabilities for each event
+p1 <- k1*dt
+p2 <- k3*M*dt
+```
+
+```{r}
+# Define vectore where M_t will be saved
+Msave <- numeric(length(time))
+
+for(i in 1:length(time)){
+  Msave[i] <- M
+  
+  p2 <- k3*M*dt
+  
+  u <- runif(1)
+  
+  if(u < p1){
+    M <- M + 1
+  } else if(u < (p1 + p2)){
+    M <- M-1
+  } else {
+    M <- M
+  }
+}
+
+plot(time, Msave, type = "l")
+```
+
