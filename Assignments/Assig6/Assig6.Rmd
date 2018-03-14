@@ -63,7 +63,7 @@ p1 <- k1*dt
 p2 <- k3*M*dt
 ```
 
-```{r}
+```{r, fig.cap = "One run of a discretized stochastic process"}
 # Define vectore where M_t will be saved
 Msave <- numeric(length(time))
 
@@ -86,3 +86,219 @@ for(i in 1:length(time)){
 plot(time, Msave, type = "l")
 ```
 
+## Different realizations of this system
+
+```{r, eval = F}
+# Set a seed
+set.seed(43)
+
+# Define number of realizations and pre-define a vector to store the values
+reps <- 1000
+M_last <- numeric(reps)
+
+for(j in 1:reps){
+  # Define initial M as 20 vor every realization
+  M <- 20
+  
+  # Define p1 and p2
+  p1 <- k1*dt
+  p2 <- k3*M*dt
+# iterate through time
+  for(i in 1:length(time)){
+    p2 <- k3*M*dt
+    
+    u <- runif(1)
+# Define what happens to M based on P1 and P2
+    if(u < p1){
+      M <- M + 1
+    } else if(u < (p1 + p2)){
+      M <- M-1
+    } else {
+      M <- M
+    }
+  }
+  # Store the last value of M
+  M_last[j] <- M
+}
+```
+
+### Histogram of the last value of M
+
+```{r, eval = F}
+hist(M_last, freq = F, col = "grey")
+x <- seq(min(M_last), max(M_last))
+y <- dpois(x, (k1/k3))
+lines(x,y,col="red",lwd=2)
+```
+
+![Histogram of the last value of 1000 realizations of a discretized stochastic system. The red line follows a poisson distribution with mean at $\frac{k_1}{k_3}$](hist1.png)
+
+\clearpage
+
+## Modify k1
+
+```{r, eval = F}
+k1 <- 1
+
+M_last <- numeric(reps)
+
+for(j in 1:reps){
+  M <- 20
+  
+  p1 <- k1*dt
+  p2 <- k3*M*dt
+
+  for(i in 1:length(time)){
+    p2 <- k3*M*dt
+    
+    u <- runif(1)
+    
+    if(u < p1){
+      M <- M + 1
+    } else if(u < (p1 + p2)){
+      M <- M-1
+    } else {
+      M <- M
+    }
+  }
+  M_last[j] <- M
+}
+
+hist(M_last, freq = F, col = "grey", main = "Histogram of M_last with k1 = 1")
+x <- seq(min(M_last), max(M_last))
+y <- dpois(x, (k1/k3))
+lines(x,y,col="red",lwd=2)
+```
+
+![Histogram of the last value of 1000 realizations of a discretized stochastic system with $K_1 = 1$. The red line follows a poisson distribution with mean at $\frac{k_1}{k_3}$](hist2.png)
+
+\clearpage
+
+## Modify dt
+
+```{r, eval = F}
+K <- 0.1
+dt <- 0.5
+Tend <- 10000
+time <- seq(0, Tend, dt)
+
+M_last <- numeric(reps)
+
+for(j in 1:reps){
+  M <- 20
+  
+  p1 <- k1*dt
+  p2 <- k3*M*dt
+
+  for(i in 1:length(time)){
+    p2 <- k3*M*dt
+    
+    u <- runif(1)
+    
+    if(u < p1){
+      M <- M + 1
+    } else if(u < (p1 + p2)){
+      M <- M-1
+    } else {
+      M <- M
+    }
+  }
+  M_last[j] <- M
+}
+
+hist(M_last, freq = F, col = "grey", main = "Histogram of M_last with dt = 1")
+x <- seq(min(M_last), max(M_last))
+y <- dpois(x, (k1/k3))
+lines(x,y,col="red",lwd=2)
+```
+
+![Histogram of the last value of 1000 realizations of a discretized stochastic system with $dt = 0.5$. The red line follows a poisson distribution with mean at $\frac{k_1}{k_3}$](hist3.png)
+\clearpage
+
+# Part 2 - Use the Gillespie Algorithm
+
+## Get one realization
+
+```{r}
+set.seed(43)
+
+D <- 1
+k1 <- 0.1
+k3 <- 0.001
+dt <- 0.1
+Tend <- 10000
+Msave <- numeric(0)
+Tsave <- numeric(0)
+
+M <- 20
+
+i <- 0
+t <- 0
+
+while(t<Tend){
+  i <- i+1
+  a1  <- k1*D
+  a2 <- k3*M
+  atot <- a1 + a2
+  u1 <- runif(1)
+  u2 <- runif(1)
+  
+  tau <- log(1/a1)/atot
+  if(u2 < (a1/atot)){
+    M <- M + 1
+  } else {
+      M <- M-1
+  }
+  t <- t + tau
+  Msave[i] <- M
+  Tsave[i] <- t
+}
+
+plot(Tsave, Msave, type = "l")
+
+```
+
+\clearpage
+
+## Get a histogram of the last value of 1000 realizations
+
+```{r}
+set.seed(43)
+
+reps <- 1000
+M <- 20
+M_last <- numeric(reps)
+
+for(j in 1:1000){
+  i <- 0
+  t <- 0
+  while(t<Tend){
+    i <- i+1
+    a1  <- k1*D
+    a2 <- k3*M
+    atot <- a1 + a2
+    u1 <- runif(1)
+    u2 <- runif(1)
+    
+    tau <- log(1/a1)/atot
+    
+    if(u2 < (a1/atot)){
+      M <- M + 1
+    } else {
+      M <- M-1
+    }
+    
+    t <- t + tau
+  }
+  M_last[j] <- M
+}
+
+hist(M_last, freq = F, col = "grey", main = "Histogram of M_last with dt = 1")
+
+x <- seq(min(M_last), max(M_last))
+y <- dpois(x, (k1/k3))
+
+lines(x,y,col="red",lwd=2)
+```
+
+The Gillespie Algorithm provides a better fit to the poisson distribution and, for this case, runs faster than the discretization.
