@@ -1,5 +1,5 @@
 ---
-title: "EEMB 247"
+title: "EEMB 247 - Quantitative Ecology"
 subtitle: "Class notes"
 author: "Juan Carlos Villaseñor-Derbez"
 output: html_document
@@ -7,13 +7,8 @@ output: html_document
 
 [Course syllabus](Syllabus_Winter2018.pdf)
 
-# Labs
-
-- [Lab 1](./Labs/Lab1/ComputerLab1.html) - Intro to R and ODEs in R
-- [Lab 2](./Labs/Lab2/Lab2.html) - Intro to linear regression
-- [Lab 3](./Labs/Lab3/ComputerLab3.nb.html) - Calculating Equilibria
-- [Lab 4](./Labs/Lab4/ComputerLab4.nb.html) - Local Stability Analysis and Separation of Time Scales
-- [Lab 5](./Labs/La54/ComputerLab5.html) - Dimensionless form, and Types of Cycles
+<div class = "row">
+<div class = "col-md-6">
 
 # Assignments
 
@@ -32,6 +27,33 @@ output: html_document
 - [Assignment 5](./Assignments/Assig5/Assig5.pdf) - Dimensionless form and types of cycles
     - [code](Assignments/Assig5/Assig5.Rmd)
     
+- [Assignment 6](./Assignments/Assig6/Assig6.pdf) - Dimensionless form and types of cycles
+    - [code](Assignments/Assig5/Assig6.Rmd)
+    
+- [Assignment 7](./Assignments/Assig7/Assig7.pdf) - Fitting models to data
+    - [code](Assignments/Assig7/Assig7.Rmd)
+
+# Labs
+
+- [Lab 1](./Labs/Lab1/ComputerLab1.html) - Intro to R and ODEs in R
+- [Lab 2](./Labs/Lab2/Lab2.html) - Intro to linear regression
+- [Lab 3](./Labs/Lab3/ComputerLab3.nb.html) - Calculating Equilibria
+- [Lab 4](./Labs/Lab4/ComputerLab4.nb.html) - Local Stability Analysis and Separation of Time Scales
+- [Lab 5](./Labs/La54/ComputerLab5.html) - Dimensionless form, and Types of Cycles
+- [Lab 6](./Labs/La54/ComputerLab5.html) - Stochastic Models
+- [Lab 7](Labs/Lab7/ComputerLab7.nb.html) - Fitting models to data
+- [Lab 8](Labs/Lab8/ComputerLab8_new.nb.html)
+    - [my notes](Labs/Lab8/Lab8Notes.html)
+
+</div>
+<div class = "col-md-6">
+
+# Final project
+
+- [Paper](FinalProject/FinalPaper.pdf)
+- [Code](FinalProject/FinalPaper.Rmd)
+- [Slides](FinalProject/Presentation.html)
+    
 # Resources
 
 - [How to construct a model](W1-1.pdf)
@@ -39,3 +61,10 @@ output: html_document
 - [Linear ODEs](W2-2.pdf)
 - [Local Stability Analysis](LocalStabilityAnalysis.pdf)
 - [Separation of timescales](Separation_of_timescales.pdf)
+- [Dimensional analysis](Edelstein-Keshet_Dimensional_Analysis.pdf)
+- [Notes on stochastic processes](NotesOnStochasticProcesses.pdf)
+
+</div>
+</div>
+
+
