@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Synchronized ecosystem management</title>
+    <meta charset="utf-8">
+    <meta name="author" content="Juan Carlos Villaseñor-Derbez" />
+    <meta name="date" content="2018-03-16" />
+    <link href="libs/remark-css/default.css" rel="stylesheet" />
+    <link href="libs/remark-css/default-fonts.css" rel="stylesheet" />
+  </head>
+  <body>
+    <textarea id="source">
+class: center, middle, inverse, title-slide
+
+# Synchronized ecosystem management
+## EEMB247
+### Juan Carlos Villaseñor-Derbez
+### 03/16/18
+
+---
+
+
+
+
+# The general idea
+
+![](fdmw.jpg)
+
+Pauly *et al.*, 1998 | © Hans Hillewaert, &lt;a href="https://creativecommons.org/licenses/by-sa/4.0" title="Creative Commons Attribution-Share Alike 4.0"&gt;CC BY-SA 4.0&lt;/a&gt;
+
+---
+
+class: inverse, center, middle
+
+# How do rebuilding strategies shape the path of recovery?
+
+---
+
+# The model
+
+From Samhouri *et al.*, 2017
+
+
+`\begin{split}
+\frac{dX}{dt} &amp;= r_xX\left(1-\frac{X}{K_x}\right)-a_xPX-h_xX \\
+\frac{dP}{dt} &amp;= [c(a_xX+a_yY)-d_P]P\left(1-\frac{P}{K_p}\right)-h_pP
+\end{split}`
+
+![](school.gif)![](cod.gif)
+
+---
+
+# Strategy
+
+- Run model until it reaches equilibrium without harvest
+
+- Begin trophic downgrading (until equilibrium)
+
+- Begin exploiting prey (until equilibrium)
+
+- Start recovery:
+
+  - Both
+
+  - Predator first
+
+  - Prey first
+  
+- Convert to discrete time and add stochastic version
+
+---
+
+# Different scenarios
+
+![](all.png)
+
+
+
+
+---
+
+# Discrete time - stochastic
+
+![](stoch.png)
+    </textarea>
+<script src="https://remarkjs.com/downloads/remark-latest.min.js"></script>
+<script>var slideshow = remark.create({
+"highlightStyle": "github",
+"highlightLines": true,
+"countIncrementalSlides": false
+});
+if (window.HTMLWidgets) slideshow.on('afterShowSlide', function (slide) {
+  window.dispatchEvent(new Event('resize'));
+});
+(function() {
+  var d = document, s = d.createElement("style"), r = d.querySelector(".remark-slide-scaler");
+  if (!r) return;
+  s.type = "text/css"; s.innerHTML = "@page {size: " + r.style.width + " " + r.style.height +"; }";
+  d.head.appendChild(s);
+})();</script>
+
+<script type="text/x-mathjax-config">
+MathJax.Hub.Config({
+  tex2jax: {
+    skipTags: ['script', 'noscript', 'style', 'textarea', 'pre']
+  }
+});
+</script>
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+(function () {
+  var script = document.createElement('script');
+  script.type = 'text/javascript';
+  script.src  = 'https://cdn.bootcss.com/mathjax/2.7.1/MathJax.js?config=TeX-MML-AM_CHTML';
+  if (location.protocol !== 'file:' && /^https?:/.test(script.src))
+    script.src  = script.src.replace(/^https?:/, '');
+  document.getElementsByTagName('head')[0].appendChild(script);
+})();
+</script>
+  </body>
+</html>
