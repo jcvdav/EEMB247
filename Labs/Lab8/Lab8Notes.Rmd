@@ -1,0 +1,88 @@
+---
+title: "Lab 9 notes"
+author: "Juan Carlos Villaseñor-Derbez"
+date: "9 de marzo de 2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Types of models
+
+Time | Discrete stage | Continuous stage |
+-----|----------|------------------|
+Discrete time | Matrix Model | Integral Projection Model
+Continuous time | ODEs, and Delayed Diffeential Equations | PDEs
+
+
+
+EEMB 595 TE
+
+PSPM Analysis
+
+
+
+
+Three ways to think about space:
+
+Time | Spatially Implicit | Spatially Explicit | Spatially realistic
+-----|--------------------|--------------------|---------------------
+Discrete Time | Patch Model | Lattice Models / Celular automata | Properties of space matter
+Continuous Time | Patch Models / Levin | PDEs / reaction-diffusion type model | 
+
+
+**Levin metapopulation model**
+
+$p$ = fraction of patches occupied by a species
+
+$\frac{dp}{dt} = cp(1-p)-mp$
+
+At aquilibrium ($\frac{dp}{dt} = 0$): $p^* = 1-\frac{m}{c}$
+
+
+**Reaction Diffusion**
+
+$\frac{\partial N(x, t)}{\partial t} = D \frac{\partial^2}{\partial x^2} + rN(x, t)(1-\frac{N(x,t)}{k}$
+
+This would be great for a 1-D marine reserve model
+
+## Advection diffusion model from the class
+
+```{r}
+require(ReacTran)
+
+# Establish the grid, using the setup.grid.1D()  function, and supply values for the parameters.
+N = 100         # Number of grid cells
+xgrid = setup.grid.1D(x.up = 0, x.down = 1, N = N)      # Between 0 and 1
+x = xgrid$x.mid     # Midpoints of grid cells
+D = 1e-4        # Diffusion coefficient
+v = 0         # Advection velocity
+r = 0.5         # per-capita growth rate  (make non-zero to add reaction component)
+k = 150
+
+# Construct the function that defines the diffusion-advection equation.
+Reaction_Diffusion = function(t, Y, parms) {
+  tran=tran.1D(C=Y,C.up=0,C.down=0,D=D,dx= xgrid)$dC
+  growth=r*Y*(1-(Y/k))
+  list(dY = tran+growth)
+}
+
+# Initialize the concentration on the grid.
+Yini = rep(100,N) # Initial concentration = 0
+# Yini[50] = 100 # Except in the second cell
+
+# Now run the calculation for five time units, with a time step of 0.01.
+times = seq(from = 0, to = 50, by = 0.01)
+out = ode.1D(y = Yini, times = times, func = Reaction_Diffusion, parms = NULL, dimens = N)
+
+# Plot the initial concentration spike and the subsequent concentration distributions 
+# at intervals of 50 time steps.
+plot(x,out[1,2:(N+1)], type = "l", lwd = 1, xlab = "x", ylab = "Y")
+for(i in seq(2, length(times), by = 50)) lines(x, out[i, 2:(N+1)], col = colors()[i])
+```
+
+
+
+

@@ -1,0 +1,212 @@
+---
+title: "Assignment 7"
+subtitle: "Fitting models to data"
+author: "Juan Carlos Villaseñor-Derbez"
+date: "`r Sys.Date()`"
+header-includes: #allows you to add in your own Latex packages
+- \usepackage{float} #use the 'float' package
+- \floatplacement{figure}{H} #make every figure with caption = h
+output:
+    bookdown::pdf_document2:
+      toc: no
+      fig_caption: true
+      number_sections: no
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = F, message = F)
+```
+
+```{r}
+# Load packages
+suppressPackageStartupMessages({
+  library(deSolve)
+  library(cowplot)
+  library(bbmle)
+  library(tidyverse)
+})
+```
+
+
+# Code up an SIR model in which the measurement error follows a Poisson distribution
+
+```{r}
+data_flu <- read.csv("../../Labs/Lab7/boarding_school_flu.csv") %>% 
+  rename(time = day)
+```
+
+```{r}
+# define a SIRv.model function to pass to lsoda
+SIR.model <- function (t, x, params) {
+  S <- x[1]
+  I <- x[2]
+  R <- x[3]
+  
+  beta <- params[1]
+  gamma <- params[2]
+  
+  N <- 763
+  
+  dSdt <- -beta*S*I/N
+  dIdt <- beta*S*I/N - gamma*I
+  dRdt <- gamma*I
+  
+  return(list(c(dSdt,dIdt,dRdt)))
+}
+```
+
+```{r}
+S0 <- 762 # Initial number of susceptibles
+I0 <- 1 # Initial number of infecteds
+R0 <- 0 # Initial number of recovered
+initial_values <- c(S=S0,I=I0,R=R0)
+
+beta <- 2 # per host per week
+gamma <- 0.5 # per week
+params <- c(beta, gamma)
+
+times <- seq(0, 15, by=0.1)
+```
+
+```{r, fig.cap = "Simulation of a SIR model with $\\beta = 2$ and $\\gamma = 0.5$. Dots represent a random measurement error following a Poisson distribution. Black dots represent the 'flu' variable (beded kids) from the flu dataset."}
+set.seed(43)
+
+lsoda(initial_values, times, SIR.model, params) %>%
+  as.data.frame() %>% 
+  left_join(data_flu, by = "time") %>%
+  gather(group, count, -c(time, flu)) %>%
+  mutate(count_error = rpois(length(count), count)) %>%
+  ggplot(aes(x = time, color = group)) +
+  geom_line(aes(y = count), size = 1) +
+  geom_point(aes(y = count_error)) +
+  geom_point(aes(y = flu), color = "black", size = 2) +
+  scale_color_brewer(palette = "Set1")
+```
+
+\clearpage
+
+# Assume that the boys confined to bed corresponds to the infected class of the SIR model and fit the model using maximum likelihood
+
+```{r}
+sir_nll <- function(beta, gamma){
+  times <- c(0, data_flu$time)
+  params <- c(beta, gamma)
+  initial_values <- c(S = 762, I = 1, R = 0)
+
+  results <- lsoda(func = SIR.model, 
+                   y = initial_values, 
+                   times = times,
+                   parms = params) %>% 
+    as.data.frame()
+  
+  nll = -1*sum(dpois(data_flu$flu, results$I[2:15], log=TRUE))
+  
+  return(nll)
+}
+```
+
+```{r}
+fit_sir <- mle2(sir_nll, 
+                start = list(beta = 2,
+                           gamma = 1),
+                method = "L-BFGS-B",
+                lower = c(0, 0),
+                upper = c(Inf, Inf))
+```
+
+Using the default values of $\beta = 2$ and $\gamma = 0.5$, we obtain a `r paste("$NLL =$", formatC(sir_nll(2, 0.5), digits = 2, format = "f"))`. The best fit is obtained with `r paste("$\\beta =$", formatC(coef(fit_sir)[1], digits = 2, format = "f"))` and `r paste("$\\gamma =$", formatC(coef(fit_sir)[2], digits = 2, format = "f"))`, achieving a `r paste("$NLL = $", formatC(sir_nll(coef(fit_sir)[1], coef(fit_sir)[2]), digits = 2, format = "f"))` Figure 2.
+
+```{r, fig.cap = "Simulation of a SIR model with optimized $\\beta = 1.69$ and $\\gamma = 0.48$. Dots represent a random measurement error following a Poisson distribution. Black dots represent the 'flu' variable (beded kids) from the flu dataset."}
+
+beta =  coef(fit_sir)[1] # per host per week
+gamma = coef(fit_sir)[2] # per week
+parameters = c(beta, gamma)
+
+times = seq(0, 15, by=0.1)
+
+set.seed(43)
+
+lsoda(initial_values, times, SIR.model, parameters) %>%
+  as.data.frame() %>% 
+  left_join(data_flu, by = "time") %>% 
+  gather(group, count, -c(time, flu)) %>% 
+  mutate(count_error = rpois(length(count), count)) %>% 
+  ggplot(aes(x = time, color = group)) +
+  geom_line(aes(y = count), size = 1) +
+  geom_point(aes(y = count_error)) +
+  geom_point(aes(y = flu), color = "black", size = 2) +
+  scale_color_brewer(palette = "Set1")
+```
+
+\clearpage
+
+# Compute the AIC of the SIR model and compare it to the SIRB model.  Which model does AIC indicate is preferable? 
+
+The SIR model is more parsimonious than the SBIR model (AIC = 158.22 vs. AIC = 185.27).
+
+```{r, echo = F}
+sibr_model = function(time, x, params){
+  
+  # Extract state variables
+  S = x[1]
+  I = x[2]
+  B = x[3]
+  R = x[4]
+  
+  # Extract the parameters
+  beta = params[1]
+  gamma = params[2]
+  delta = params[3]
+  N = 763 # Total population size
+  
+  # Write the update equations
+  dS = -beta*S*(I / N)
+  dI = beta*S*(I / N) - gamma*I
+  dB = gamma*I - delta*B
+  dR = delta*B
+  
+  return(list(c(dS, dI, dB, dR)))
+}
+
+sibr_nll = function(beta, gamma, delta){
+  
+  # Setting initial conditions and parameters just like before
+  times = c(0, data_flu$time)
+  params = c(beta=beta, gamma=gamma, delta=delta)
+  init_vals = c(S=762, I=1, B=0, R=0)
+  ode_res = as.data.frame(ode(func=sibr_model, 
+                                y=init_vals, 
+                                times=times,
+                                parms=params))
+  # Removing the initial condition
+  nll = -1*sum(dpois(data_flu$flu, ode_res$B[2:15], log=TRUE))
+  return(nll)
+  
+}
+
+# Test that the function is working
+start_params <- c(2.4029047, 0.9092372, 0.4123194)
+
+fit_sbir = mle2(sibr_nll, 
+               start=list(beta=start_params[1],
+                          gamma=start_params[2],
+                          delta=start_params[3]),
+               method="L-BFGS-B",
+               lower=c(0, 0, 0),
+               upper=c(Inf, Inf, Inf))
+
+
+```
+
+```{r}
+AICc(fit_sir, fit_sbir, nobs = 14, k = c(2, 3)) %>%
+  mutate(Model = c("SIR", "SBIR"),
+         N = 14) %>% 
+  select(Model, k = df, N, AICc) %>% 
+  knitr::kable(format = "latex",
+               caption = "Corrected Akaike Information Criterion (AICc) for the SIR and SBIR models.",
+               booktabs = T) %>% 
+  kableExtra::kable_styling(latex_options = "HOLD_position")
+```
+
+

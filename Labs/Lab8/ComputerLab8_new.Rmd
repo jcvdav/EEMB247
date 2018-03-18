@@ -1,0 +1,417 @@
+---
+title: "EEMB247/BMSE247: Computer lab 8: Spatially-Structured and Stage-Structured Models"
+author: "Cherie Briggs"
+date: "March 9, 2018"
+output: html_notebook
+---
+
+
+# Part 1: Stage-Structured Models
+
+## 1.1 The Linear Chain Trick
+
+
+Consider  asystem with two developmental stages, modeled in continuous time.  I’ll refer to the stages as "Juveniles" and "Adults", but they could represent any dynamical system in which the entities in the system transition from one state to another.  Individuals mature out of the Juvenile stage, into the Adult stage.  
+
+If we model this as a system of ordinary differential equations, in which individuals mature at a constant per-individual rate of $m_J$, then the distribution of times spent in the juvenile stage will be exponentially-distributed, and the average time spent in the juvenile stage will be $T_J = 1/m_J$.
+
+> You can illustrate this in R by obtaining numerical solutions for the equations:
+
+$$
+\frac{dJ(t)}{dt}= -m_J  J(t) \\
+\frac{dA(t)}{dt}= m_J  J(t) 
+$$
+
+> Start will 100 individuals in the Juvenile class, and 0 individuals in the Adult class, and set $m_J = 1/10$.  The solution will look like the plot below.  You can also plot the maturation rate, $mat.rate = m_J J(t)$, to illustrate that it is highest at time $t = 0$. 
+
+```{r}
+require(deSolve)
+
+twostage <- function(t, y, parms) {
+  J = y[1]
+  A = y[2]
+  mJ = parms[1]
+  
+	dJdt = -mJ*J
+	dAdt = mJ*J
+
+		#return list of ODEs
+		ODEs = c(dJdt,dAdt)
+		list(ODEs)
+} 
+
+
+mJ = 1/10
+pars = c(mJ = mJ)
+
+init = c(J=100,A=0)
+
+tInt = seq(0, 50, by = 0.1)
+
+Sout = as.data.frame(lsoda(init, times= tInt, func= twostage, parms= pars))
+mat.rate = mJ*Sout$J
+plot(Sout$time,Sout$J,ylim=c(0,100), type = "l", col = "black", lty = 2, lwd = 2, xlab="time",ylab="densities, and maturation rate")
+lines(Sout$time,Sout$A,lty = 3, lwd = 2, col="blue")
+lines(Sout$time,mat.rate,col="red")
+legend("right",legend=c("J","A","mat.rate"),lty=c(2,3,1), lwd = c(2,2,1),col=c("black","blue","red"))
+
+```
+
+**note:** Actually, you could get the solutions to these equations analytically:  $J(t) = J(0) \exp\left\{-m_Jt\right\}$, which can be substituted into the equation for $dA/dt$ to give:  $dA/dt = m_JJ(0) \exp\left\{-m_Jt\right\}$.  This is a pure-time equation that can be solved by integration, giving $A(t) = A(0) + J(0)\left[1- \exp\left\{-m_Jt\right\}\right]$.
+
+> Now try dividing the Juvenile class into $n = 2$ identical substages, $J_1(t)$ and $J_2(t)$, with individuals maturing out of the first juvenile substage into the second juvenile substage at rate $n*m_J$, before maturing into the adult stage (also at rate $n*m_J$). 
+
+$$
+\begin{align}
+& \frac{dJ_1(t)}{dt}= -n m_J  J_1(t) \\
+& \frac{dJ_2(t)}{dt}= n m_J J_1(t) - n m_J  J_2(t) \\
+& \frac{dA(t)}{dt}= n m_J  J_2(t) 
+\end{align}
+$$
+
+> Start with all 100 individuals in $J_1$. Plot the total juvenile population ($J = J_1 + J_2$), the adult stage, and the maturation rate into the adult stage ($\text{mat.rate} = n m_J J_2(t)$) through time.  You’ll see that the maturation rate is no longer highest at $t = 0$.   
+
+> Now try dividing the Juvenile stage into a larger number of substages (n = # of stages > 2):
+
+$$
+\begin{align}
+& \frac{dJ_1(t)}{dt}= -n m_J  J_1(t) \\
+\\
+& \frac{dJ_2(t)}{dt}= n m_J J_1(t) - n m_J  J_2(t) \\
+\\
+& \hspace{5mm}\vdots \\
+\\
+& \frac{dJ_n(t)}{dt}= n m_J J_{n-1}(t) - n m_J  J_n(t) \\
+\\
+& \frac{dA(t)}{dt}= n m_J  J_2(t) 
+\end{align}
+$$
+
+> Try writing your code such that you generate and plot the results for any value of $n$.
+
+As $n$ $\rightarrow$ $\infty$, the time spent in the Juvenile stage will approximate a fixed time of $T_J = 1/m_J$ (i.e. the output will approximate that of a set of delayed differential equations). 
+
+---
+
+
+## 1.2 Stage-Structured Host-Parasitoid Model
+
+>Now try making the model more complicated, by adding a parasitoid $P$ that attacks only the Juvenile stage.  The parasitoid has attack rate $a$, and death rate $d_P$.  You will also need to add host fecundity $F$, and juvenile and adult death rates, $d_J$ and $d_A$, respectively. 
+
+>The model will now look like this:
+$$
+\begin{align}
+&\frac{dJ_1}{dt} = F A(t) - n m_J J_1 -d_J J_1 - a J_1 P \\
+&\\
+&\frac{dJ_2}{dt} = n m_J J_1 - n m_J J_2 -d_J J_2- a J_2 P \\
+&\\
+& \hspace{5mm} \vdots \\
+&\\
+&\frac{dJ_n}{dt} = n m_J J_{n-1} - n m_J J_n -d_J J_n- a J_n P \\
+&\\
+& \frac{dA}{dt} = nm_J J_n -d_A A \\
+&\\
+&\frac{dP}{dt} = \sum_{i=1}^n a J_i P -d_P P 
+\end{align}
+$$
+
+
+>Try simulating the stage-structured host-parasitoid model with n = 1, n = 2, and n = something large, and see how reducing the variability in the time spent in the juvenile stage affects the dynamics of the system. 
+
+
+---
+
+---
+
+
+# Part 2: Spatial Models using Partial Differential Equations
+
+**modified from: Bloomfield, V. A. 2014. Using R for Numerical Analysis in Science and Engineering.  CRC Press.**
+
+**Package you will need for this lesson:**
+
+1. `ReacTran`
+
+```{r}
+install.packages("ReacTran")
+library(ReacTran)
+```
+
+---
+
+---
+
+## 2.1. Diffusion model
+
+$C(t,x)$ represents the concentration of a chemical at position $x$ (in 1-dimensional space) at time $t$.  The diffusion equation (Fick’s 2nd law) in one spatial dimension is:
+$$
+\frac{\partial C}{\partial t} = D \frac{\partial^2C}{\partial x^2}
+$$
+
+where $D$ is the diffusion coefficient.  (This is also like the heat conduction equation, if concentration $C$ is replaced by temperature $T$, and the diffusion coefficient $D$ is replaced by the thermal diffusion coefficient $\kappa$). 
+
+---
+
+### a. Approximate numerical solution through discretization
+To solve the diffusion equation numerically, we can discretize the time derivative using the *Euler approximation*:  
+
+In the equation above, replace  $\frac{\partial C}{\partial t}$ with the approximation:
+
+$$
+\frac{\partial C}{\partial t} \approx \frac{C\left(t_i,x_j +\Delta x \right) + C\left(t_i,x_j -\Delta x \right) -2C\left(t_i,x_j\right)}{\Delta x^2}
+$$ 
+
+Rearranging, we can compute the concentration at the time point $i+1$, for each spatial point $j$ as:
+
+$$
+\begin{align}
+& C\left(i+1,j\right)=C\left(i,j\right)+A\left[C\left(i,j+1\right)+C\left(i,j-1\right)-2C\left(i,j\right)\right] \\
+& \text{where: } A=\frac{D\Delta t}{\Delta x^2}
+\end{align}
+$$  
+
+(Note, the coefficient, $A=\frac{D\Delta t}{\Delta x^2}$ should be less than 0.5 for the computation to be stable.)
+
+We can use this equation, along with boundary conditions to compute the time-evolution of the concentration profile.
+
+The analytic solution for the one-dimensional diffusion equation, in which the concentration is initially a spike of magnitude $C_0$ at the origin $x_0$, and zero everywhere else, is known to be: 
+
+$$
+C\left(t,x\right) = \frac{C_0}{\sqrt{2\pi\sigma^2}}\exp\left[-\frac{\left(x-x_0\right)^2}{2\sigma^2}\right]
+$$
+
+which is a Normal distribution, where the standard deviation $\sigma$ is:  
+$\sigma = \sqrt{2 D t}$  
+that is, the initially sharp peak broadens with the square root of the elapsed time. 
+
+---
+
+
+The R code for this is:
+
+```{r}
+# Set the parameters of the diffusion process.
+dt=3  		#Timestep (in units of seconds)
+dx = 0.1 	# Distance step (in units of cm)
+D = 1e-4 	# Diffusion coefficient  (in units of cm^2/s)
+A = D*dt/dx^2 # Coefficient should be < 0.5 for stability 
+
+#  Discretize the spatial grid and set the number of time iterations.
+L=1 		# Length from -L/2 to L/2 
+n = L/dx + 1 	# Number of grid points 
+x = seq(-L/2,L/2,dx) 	# Location of grid points 
+steps = 30 	# Number of iterations
+time = 0:steps
+
+# Initialize concentrations to 0 except for the spike at the center of the grid.
+C = matrix(rep(0, (steps+1)*n), nrow = steps+1, ncol = n)  
+C[1, round(n/2)] = 1/dx 	# Initial spike at central point
+
+# Loop over time and space variables 
+for (i in 1:(steps-1)) { 		#loop over time steps
+    for (j in 2:(n-1)) {	#loop over spatial steps
+      # Compute new concentration profile at each time
+      C[i+1,j] = C[i,j] + A*(C[i,j+1] + C[i,j-1] - 2*C[i,j])
+    }
+}
+
+# Plot a perspective view of the concentration evolution in space and time.
+persp(time, x, C, theta = 45, phi = 30)
+
+```
+---
+---
+
+
+### b.	Solving PDEs with the `ReacTran` package
+
+Numerical solutions to partial differential equations in R can also be obtained using the `ReacTran` package and the packages that it calls. `ReacTran` (which stands for “reactive transport”) facilitates the modeling of partial differential equations in 1, 2, and 3 dimensions. 
+
+The ReacTran package contains:
+*	Functions to set up a grid (1D or 2D)
+*	Functions to attach parameters and properties to the grid (1D or 2D)
+*	Functions to calculate the advective-diffusive transport terms over the grid (1D, 2D, 3D)
+* Various utility functions.
+
+Use of `ReacTran` generally proceeds in three or four steps. 
+
+---
+
+#### i.	`setup.grid.1D`
+
+`setup.grid.1D` is used to establish the grid. In the simplest case, this function subdivides the one-dimensional space of length `L`, between `x.up` and `x.down`, into `N` grid cells of size `dx.1`.  
+The usage is:  
+`setup.grid.1D(x.up=0, x.down=NULL, L=NULL, N=NULL, dx.1=NULL,`   
+`     p.dx.1= rep(1,length(L)), max.dx.1=L, dx.N=NULL, p.dx.N=rep(1,length(L)), max.dx.N=L)`
+
+where:  
+`x.up` is the position of the upstream boundary  
+`x.down` is the position of the downstream boundary  
+`L` = `x.down` - `x.up`  
+`N` is the number of grid cells =  `L/dx.1`
+
+In more complex situations, the size of the cells can vary, or there may be more than one zone. These situations are described in the help page for `setup.grid.1D`.
+
+The values returned by `setup.grid.1D` include:   
+`x.mid`: a vector of length `N`, which specifies the positions of the midpoints of the grid cells at which the concentrations are measured, and   
+`x.int`: a vector of length `(N+1)`, which specifies the positions of the interfaces between grid cells, at which the fluxes are measured.
+
+The plot function for `grid.1D` plots both the positions of the cells and the box thicknesses, showing both `x.mid`  and `x.int`. The examples on the help page demonstrate this behavior.  
+
+`setup.grid.1D` serves as the starting point for `setup.grid.2D`, which creates a grid over a rectangular domain defined by two orthogonal 1D grids.
+
+---
+
+#### ii.	`setup.prop.1D`
+Many spatial models will involve grids with constant properties.  But, if some property that affects diffusion or advection varies with position in the grid, the variation can be incorporated with the function `setup.prop.1D` (or `setup.prop.2D` in two dimensions).
+
+Given either a mathematical function or a data matrix, the `setup.prop.1D`  function calculates the value of the property of interest at the middle of the grid cells and at the interfaces between cells. 
+
+The function is called:  
+`setup.prop.1D(func=NULL, value=NULL, xy=NULL, interpolate="spline", grid, ...)`
+ 
+where:
+`func`  is a function that governs the spatial dependency of the property  
+`value`  is the constant value given to the property if there is no spatial dependency  
+`xy`  is a data matrix in which the first column gives the position, and the second column gives the values which are interpolated over the grid  
+`interpolate`  is the interpolation method (spline or linear)  
+`grid`  is the object defined with `setup.grid.1D`  
+`...` are additional arguments to be passed to `func`.
+
+---
+
+#### iii.		`tran.1D`
+This function calculates the transport terms - the rate of change of concentration due to diffusion and advection - in a 1D model of a liquid (volume fraction = 1) or a porous solid (volume fraction may be variable and < 1). `tran.1D` can also used for problems in spherical or cylindrical geometries, though in these cases the grid cell interfaces will have variable areas.
+
+The usage is:
+`tran.1D(C, C.up = C[1], C.down = C[length(C)], flux.up = NULL, flux.down = NULL, a.bl.up = NULL,` `a.bl.down = NULL, D = 0, v = 0, AFDW = 1, VF = 1, A = 1, dx, full.check = FALSE, full.output = FALSE)`
+
+where:
+`C`  is a vector of concentrations at the midpoints of the grid cells.  
+`C.up` and `C.down`  are the concentrations at the upstream and downstream boundaries.  
+`flux.up` and `flux.down`  are the fluxes into and out of the system at the upstream and downstream boundaries.  
+If there is convective transfer across the upstream and downstream boundary layers, `a.bl.up`  and `a.bl.down`  are the coefficients.  
+`D`  is the diffusion coefficient.  
+`v`  is the advective velocity.  
+`ADFW`  is the weight used in the finite difference scheme for advection.  
+`VF` and `A`  are the volume fraction and area at the grid cell interfaces.  
+`dx`  is the thickness of the grid cells, either a constant value or a vector.  
+`full.check`  and `full.output`  are logical flags to check consistency and regulate output of the calculation. Both are `FALSE` by default.  
+When `full.output = FALSE`, the values returned by `trans.1D`  are `dC` (the rate of change of `C` at the center of each grid cell due to transport), and `flux.up` and `flux.down` (the fluxes into and out of the model at the upstream and downstream boundaries).  
+
+[note: `ReacTran` also has functions for estimating the diffusion and advection terms in two- and three-dimensional models, and in cylindrical and polar coordinates. The number of inputs grows with dimension, but the inputs are essentially the same as in the 1D case. See the help pages for `tran.2D`,  `tran.3D`,  `tran.cylindrical`, and `tran.polar`. The function `tran.volume.1D`, which estimates the volumetric transport term in a 1D model.]
+
+---
+
+#### iv.	`tran.1D`
+
+Once the grid has been set up and properties assigned to it, and the transport model has been formulated with tran.1D  (or its 2D or 3D analogs), then ReacTran  calls  `ode.1D`  from the `deSolve`  package if a time-dependent solution is needed, or `steady.1D`  from the `rootSolve`  package if a steady-state solution is desired. 
+
+---
+---
+
+
+## 2.2. 1-D Diffusion-Advection Model
+Here is a modification of the 1-dimensional diffusion equation solved earlier, now including an advection term (continuous flow in one direction). This might represent, for example, a narrow layer of a small molecule at the top of a solution column, subject both to diffusion and to an electrophoretic field driving it with velocity $v$. We will obtain a numerical solution using the `ReacTran` package. 
+
+R code:
+```{r}
+#Load ReacTran, which also causes loading of its ancillary packages.
+require(ReacTran)
+
+# Establish the grid, using the setup.grid.1D()  function, and supply values for the parameters.
+N = 100 		# Number of grid cells
+xgrid = setup.grid.1D(x.up = 0, x.down = 1, N = N) 		# Between 0 and 1
+x = xgrid$x.mid 	# Midpoints of grid cells
+D = 1e-4 		# Diffusion coefficient
+v = 0.1 		# Advection velocity
+r = 0.0			# per-capita growth rate  (make non-zero to add reaction component)
+
+# Construct the function that defines the diffusion-advection equation.
+Reaction_Diffusion = function(t, Y, parms) {
+  tran=tran.1D(C=Y,C.up=0,C.down=0,D=D,v=v,dx= xgrid)$dC
+  growth=r*Y
+  list(dY = tran+growth)
+}
+
+# Initialize the concentration on the grid.
+Yini = rep(0,N) # Initial concentration = 0
+Yini[2] = 100 # Except in the second cell
+
+# Now run the calculation for five time units, with a time step of 0.01.
+times = seq(from = 0, to = 5, by = 0.01)
+out = ode.1D(y = Yini, times = times, func = Reaction_Diffusion, parms = NULL, dimens = N)
+
+# Plot the initial concentration spike and the subsequent concentration distributions 
+# at intervals of 50 time steps.
+plot(x,out[1,2:(N+1)], type = "l", lwd = 1, xlab = "x", ylab = "Y")
+for(i in seq(2, length(times), by = 50)) lines(x, out[i, 2:(N+1)])
+
+
+```
+
+---
+---
+
+
+## 2.3. Wave Equation
+Now consider the one-dimensional wave equation:
+$$
+\frac{\partial^2W}{\partial t^2} = c^2 \frac{\partial^2W}{\partial x^2}
+$$
+
+where $W$ is the displacement and $c$  the wave speed.
+
+This can be solved by setting $c^2 = D$, and letting $W = u$ and $\frac{\partial u}{\partial t} = v$, and solving for the pair of variables $(u,v)$.  `ode.1D` is used to solve the set of simultaneous ODEs with `c = 1`.  
+Here we consider the 1-D wave equation for a plucked string, held initially at 0 amplitude for $x < -25$, and $x >25$, and stretched linearly to a maximum at $x=0$.
+
+
+```{r}
+require(ReacTran)
+dx = 0.2 	# Spacing of grid cells
+# String extends from -100 to +100
+xgrid = setup.grid.1D(x.up = -100, x.down = 100, dx.1 = dx)
+x = xgrid$x.mid 	# midpoints of grid cells
+N = xgrid$N 	# number of grid cells
+
+# Set initial conditions on string height profile and velocity.
+uini = rep(0,N) 	# String height vector before stretching
+vini = rep(0,N) 	# Initial string velocity vector
+displ = 10 	# Initial displacement at center of string
+
+# Impose initial triangular height profile on string between +/- 25
+for(i in 1:N) {
+	if (x[i] > -25 & x[i] <= 0) uini[i] = displ/25*(25 + x[i]) else
+	if (x[i] > 0 & x[i] < 25) uini[i] = displ/25*(25 - x[i])
+}
+yini = c(uini, vini)
+
+# Set the time sequence over which to compute the solution
+times = seq(from = 0, to = 50, by = 1)
+
+# Define the function that establishes the displacement and velocity vectors
+wave = function(t,y,parms) {
+	u = y[1:N] 	# Separate displacement and velocity vectors
+	v = y[(N+1):(2*N)]
+
+	du=v
+	dv=tran.1D(C=u,C.up=0,C.down=0,D=1,dx=xgrid)$dC
+	return(list(c(du, dv))) 
+}
+
+# Solve the equations using ode.1D with the “adams” method.
+# Note the use of the subset()  function to extract the displacement vector u from the result vector.
+
+out = ode.1D(func = wave, y = yini, times = times, parms = NULL, method = "adams", dimens = N, names = c("u", "v"))
+u = subset(out, which = "u") 	# Extract displacement vector
+
+# Plot the displacement every 10th time interval
+outtime = seq(from = 0, to = 50, by = 10)
+matplot.1D(out, which = "u", subset = time %in% outtime, grid=x,xlab="x",ylab="u",type="l", lwd = 2, xlim = c(-100,100), col = c("black", rep("darkgrey",5)))
+
+```
+
+
+
+---
+---
